@@ -3,9 +3,9 @@ import gdown
 
 # --- OTOMATİK DRIVE İNDİRME YAMASI ---
 DRIVE_FILES = {
-    "MOD13Q1.A2020097.h09v04.061.2020332100419.hdf": "1AUBcjJgitFUdlQPJuFQm-cDq-YMZmKPe",
-    "NH_PROBABILISTIC_AM_FT_2020_day112.tif": "1Z3Lx2I84FrZLvu0_W4w4uD6gFrrvgA3G",
-    "SMAP_L3_SM_P_E_20200421_R19240_001.h5": "1_CsqYlqoHc_Jgee3girMowmzvMZ9nKpi"
+    "MOD13Q1.A2020097.h09v04.061.2020332100419.hdf": "https://drive.google.com/file/d/1AUBcjJgitFUdlQPJuFQm-cDq-YMZmKPe/view?usp=drive_link",
+    "NH_PROBABILISTIC_AM_FT_2020_day112.tif": "https://drive.google.com/file/d/1Z3Lx2I84FrZLvu0_W4w4uD6gFrrvgA3G/view?usp=drive_link",
+    "SMAP_L3_SM_P_E_20200421_R19240_001.h5": "https://drive.google.com/file/d/1Z3Lx2I84FrZLvu0_W4w4uD6gFrrvgA3G/view?usp=drive_link"
 }
 
 for filename, file_id in DRIVE_FILES.items():
