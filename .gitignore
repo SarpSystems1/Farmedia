@@ -1,0 +1,4 @@
+*.hdf
+*.tif
+*.h5
+secrets.toml

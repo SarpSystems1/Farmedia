@@ -1,0 +1,7 @@
+streamlit
+pandas
+h5py
+rasterio
+gdown
+matplotlib
+groq
