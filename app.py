@@ -180,25 +180,85 @@ st.markdown("""
 
     /* Floating Frosted Glass Sidebar */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, rgba(8, 18, 16, 0.95) 0%, rgba(13, 29, 25, 0.97) 100%) !important;
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
+        background: linear-gradient(180deg, rgba(8, 20, 17, 0.96) 0%, rgba(12, 30, 26, 0.98) 100%) !important;
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
         border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
     }
     [data-testid="stSidebar"] * {
         color: #e2e8f0 !important;
     }
+
+    /* Soft, Smooth & Aesthetic Sidebar Navigation Tabs */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+        padding: 4px 0 !important;
+    }
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label {
-        background: rgba(255, 255, 255, 0.04);
-        padding: 9px 14px;
-        border-radius: 12px;
-        margin-bottom: 6px;
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        transition: all 0.2s ease;
+        position: relative !important;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0.01) 100%) !important;
+        backdrop-filter: blur(14px) !important;
+        -webkit-backdrop-filter: blur(14px) !important;
+        padding: 10px 16px !important;
+        border-radius: 14px !important;
+        margin-bottom: 0px !important;
+        border: 1px solid rgba(255, 255, 255, 0.07) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+        transition: all 0.28s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+        cursor: pointer !important;
+        overflow: hidden !important;
     }
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:hover {
+        background: linear-gradient(135deg, rgba(52, 211, 153, 0.09) 0%, rgba(255, 255, 255, 0.05) 100%) !important;
+        border-color: rgba(52, 211, 153, 0.35) !important;
+        transform: translateX(4px) !important;
+        box-shadow: 0 4px 18px rgba(16, 185, 129, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+    }
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:hover * {
+        color: #ffffff !important;
+    }
+
+    /* Active / Selected Tab State (Silky Glowing Glass Pill) */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:has(input:checked) {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.22) 0%, rgba(5, 150, 105, 0.12) 100%) !important;
+        border: 1px solid rgba(52, 211, 153, 0.55) !important;
+        border-left: 3.5px solid #34d399 !important;
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+        transform: translateX(6px) !important;
+    }
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:has(input:checked) * {
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        letter-spacing: -0.01em !important;
+    }
+
+    /* Soft Radio Dot Pill Styling */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label > div:first-child {
+        border-color: rgba(255, 255, 255, 0.25) !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        transition: all 0.25s ease !important;
+    }
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:has(input:checked) > div:first-child {
+        border-color: #34d399 !important;
+        background: #10b981 !important;
+        box-shadow: 0 0 12px rgba(52, 211, 153, 0.8), inset 0 1px 2px rgba(255, 255, 255, 0.4) !important;
+    }
+
+    /* Smooth Sidebar Scrollbar */
+    [data-testid="stSidebar"]::-webkit-scrollbar {
+        width: 6px;
+    }
+    [data-testid="stSidebar"]::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    [data-testid="stSidebar"]::-webkit-scrollbar-thumb {
         background: rgba(255, 255, 255, 0.1);
-        border-color: rgba(52, 211, 153, 0.4);
+        border-radius: 999px;
+    }
+    [data-testid="stSidebar"]::-webkit-scrollbar-thumb:hover {
+        background: rgba(52, 211, 153, 0.35);
     }
 
     /* Sidebar Portfolio Frosted Card */
