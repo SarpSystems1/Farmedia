@@ -1,15 +1,11 @@
-import os
-import gdown
-
-# --- OTOMATİK DRIVE İNDİRME YAMASı ---
-import os
-import gdown
 import streamlit as st
 
+# --- OTOMATİK DRIVE İNDİRME YAMASI ---
 files = {
     "MOD13Q1.A2020097.h09v04.061.2020332100419.hdf": "1AUBcjJgitFUdlQPJuFQm-cDq-YMZmKPe",
     "SMAP_L3_SM_P_E_20200421_R19240_001.h5": "1_CsqYlqoHc_Jgee3girMowmzvMZ9nKpi",
-    "NH_PROBABILISTIC_AM_FT_2020_day112.tif": "1Z3Lx2I84FrZLvu0_W4w4uD6gFrrvgA3G"
+    "NH_PROBABILISTIC_AM_FT_2020_day112.tif": "1Z3Lx2I84FrZLvu0_W4w4uD6gFrrvgA3G",
+    "explore.etdata.org_raster_latlon_[undefined,undefined] (2).png": "19Y7IAgv6XSiv6U2CtsFuTovD-yDZThTo"
 }
 
 for filename, file_id in files.items():
@@ -17,12 +13,6 @@ for filename, file_id in files.items():
         url = f"https://drive.google.com/uc?id={file_id}"
         with st.spinner(f"{filename} Google Drive'dan indiriliyor..."):
             gdown.download(url, filename, quiet=False)
-# --- 3. TIF Dosyası (Uydu Haritası) ---
-tif_filename = "NH_PROBABILISTIC_AM_FT_2020_day112.tif"
-if not os.path.exists(tif_filename):
-    tif_url = "https://drive.google.com/uc?id=1Z3Lx2I84FrZLvu0_W4w4uD6gFrrvgA3G"
-    with st.spinner("Uydu TIF verisi Google Drive'dan indiriliyor..."):
-        gdown.download(tif_url, tif_filename, quiet=False, fuzzy=True)
 # -------------------------------------
 import re
 import time
