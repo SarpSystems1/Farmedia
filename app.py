@@ -9,6 +9,7 @@ Integrated Data Pipelines:
   - NASA MODIS MOD13Q1        : 250 m 16-Day Vegetation Indices NDVI/EVI (.hdf)
   - NSIDC-0771 / NSIDC-0477   : Cryospheric Freeze/Thaw State GeoTIFF (.tif)
   - OpenET / Evapotranspiration: Raster Tile Analysis (.png)
+  - ECOSTRESS (ECOv002)       : Thermal & Evapotranspiration Surface Stress
   - NASA POWER                : Daily Agro-Meteorological Surface Telemetry (.csv)
   - Resend HTTP API           : Secure Cloud Email Dispatcher (Bypasses SMTP Blocks)
   - Sarp AI (Groq LLM)        : Domain-Guarded Agronomic Assistant
@@ -456,49 +457,6 @@ def ask_groq(system_prompt: str, history: list[dict], retries: int = 3) -> tuple
         return None, last_error
     except Exception as e:
         return None, str(e)
-    """
-    Submits conversation to Groq LLM API with automated model fallback and retry logic.
-    Returns (reply_text, error_message).
-    """
-    if not GROQ_AVAILABLE:
-        return None, "The Groq client library is not installed in this environment."
-
-    api_key = get_secret("GROQ_API_KEY")
-    if not api_key:
-        return None, "GROQ_API_KEY was not found. Please configure it in .streamlit/secrets.toml."
-
-    try:
-        client = Groq(api_key=api_key)
-        models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
-        messages = [{"role": "system", "content": system_prompt}] + history[-8:]
-        last_error = ""
-
-        for model in models:
-            for attempt in range(retries):
-                try:
-                    resp = client.chat.completions.create(
-                        model=model,
-                        messages=messages,
-                        temperature=0.35,
-                        max_tokens=900,
-                    )
-                    text = resp.choices[0].message.content
-                    if text and text.strip():
-                        return text, None
-                    last_error = f"{model} returned an empty payload."
-                    break
-                except Exception as e:
-                    last_error = f"{type(e).__name__}: {e}"
-                    err_lower = str(e).lower()
-                    if "401" in err_lower or "invalid api key" in err_lower:
-                        return None, f"Groq API authentication failed. Please verify API key. ({last_error})"
-                    if "429" in err_lower or "rate" in err_lower:
-                        time.sleep(1.5 ** attempt)
-                        continue
-                    break
-        return None, last_error
-    except Exception as e:
-        return None, str(e)
 
 
 def rotation_note(last_crop: str, crop: str) -> str | None:
@@ -555,6 +513,12 @@ def ndvi_status(score: float) -> tuple[str, str, str]:
 # ============================================================================
 # 6. RESILIENT DATA LOADERS (KEYERROR RESISTANT)
 # ============================================================================
+
+def load_ecostress_files() -> list[str]:
+    """Finds all local ECOSTRESS image/raster files in the project directory."""
+    eco_files = sorted(Path(".").glob("ECOv002*"))
+    return [f.name for f in eco_files if f.suffix.lower() in [".png", ".jpg", ".jpeg", ".tif", ".tiff"]]
+
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def load_nasa_power_csv() -> tuple[pd.DataFrame | None, str]:
@@ -712,7 +676,7 @@ def get_field_snapshot() -> dict:
     }
 
 
-def send_alert_email_via_resend(to_email: str = "example@gmail.com") -> dict:
+def send_alert_email_via_resend(to_email: str = "sarpsystems.test@gmail.com") -> dict:
     """
     Sends an email securely via Resend HTTP REST API.
     Bypasses cloud outbound SMTP port restrictions (ports 25, 465, 587).
@@ -759,9 +723,11 @@ NASA Space Apps Challenge
         "Content-Type": "application/json"
     }
 
+    target = to_email.strip() if to_email and "@" in to_email and "example" not in to_email else "sarpsystems.test@gmail.com"
+
     payload = {
         "from": "Sarp AI <onboarding@resend.dev>",
-        "to": [to_email],
+        "to": [target],
         "subject": f"[Sarp AI] Critical Agronomic Alert & Field Status Report ({crop})",
         "text": email_body
     }
@@ -770,6 +736,15 @@ NASA Space Apps Challenge
         response = requests.post("https://api.resend.com/emails", json=payload, headers=headers, timeout=10.0)
         if response.status_code in (200, 201):
             return {"success": True, "data": response.json()}
+        elif response.status_code == 403:
+            return {
+                "success": False,
+                "error": (
+                    "Resend Test Account Restriction (HTTP 403): With the default 'onboarding@resend.dev' sender, "
+                    "Resend only delivers emails to your registered developer address (sarpsystems.test@gmail.com). "
+                    "To deliver alerts to any recipient, verify your domain at https://resend.com/domains."
+                )
+            }
         else:
             return {"success": False, "error": f"HTTP {response.status_code}: {response.text}"}
     except Exception as e:
@@ -1408,12 +1383,12 @@ elif selected == PAGES[2]:
 
 
 # ============================================================================
-# 14. PAGE 4: FROST & FREEZE/THAW MAP (OPENET PNG & SATELLITE RASTER)
+# 14. PAGE 4: FROST & FREEZE/THAW MAP (OPENET, ECOSTRESS & NSIDC RASTER)
 # ============================================================================
 
 elif selected == PAGES[3]:
     st.title("❄️ Frost & Freeze/Thaw Dynamics")
-    st.caption("Surface freeze-thaw state classification and OpenET satellite raster telemetry for Weld County.")
+    st.caption("Surface freeze-thaw state classification, OpenET raster, and ECOSTRESS thermal telemetry for Weld County.")
 
     st.subheader("🌡️ Coldest Temperature Each Day")
 
@@ -1476,6 +1451,20 @@ elif selected == PAGES[3]:
         except Exception as e:
             st.error(f"Satellite GeoTIFF rendering fallback: {e}")
 
+    # ECOSTRESS Thermal & Surface Stress Layers
+    st.divider()
+    st.subheader("🛰️ ECOSTRESS Thermal & Surface Stress Layers")
+    eco_list = load_ecostress_files()
+
+    if eco_list:
+        selected_eco = st.selectbox("Select ECOSTRESS Layer to Inspect:", eco_list)
+        if selected_eco.lower().endswith((".png", ".jpg", ".jpeg")):
+            st.image(selected_eco, caption=f"ECOSTRESS Layer: {selected_eco}", use_container_width=True)
+        else:
+            st.info(f"GeoTIFF Raster Selected: `{selected_eco}` (Ready for spatial processing).")
+    else:
+        st.warning("No local ECOSTRESS files (`ECOv002*`) found in the project directory yet.")
+
 
 # ============================================================================
 # 15. PAGE 5: PLANT HEALTH (NASA MODIS)
@@ -1536,14 +1525,16 @@ elif selected == PAGES[5]:
     st.subheader("📧 Send Live Email Alert")
     st.write("Transmit real-time satellite telemetry reports to farm operators via secure cloud HTTP API.")
 
-    default_recipient = st.session_state["profile"].get("email") or "example@gmail.com"
+    default_recipient = st.session_state["profile"].get("email") or "sarpsystems.test@gmail.com"
     target_email = st.text_input("Recipient Email Address:", value=default_recipient)
+
+    st.info("💡 **Resend Developer Tier Notice:** In free test mode (`onboarding@resend.dev`), emails can only be sent to your registered developer account (`sarpsystems.test@gmail.com`). To dispatch alerts to external farmer addresses, verify a custom domain at [resend.com/domains](https://resend.com/domains).")
 
     if st.button("Send Alert Email Now"):
         with st.spinner("Sending email via secure HTTP API..."):
             result = send_alert_email_via_resend(target_email)
             if result.get("success"):
-                st.success("✅ Email successfully sent via Resend API!")
+                st.success(f"✅ Alert email successfully delivered to {target_email} via Resend API!")
             else:
                 st.error(f"❌ Failed to send email: {result.get('error')}")
 
