@@ -10,6 +10,7 @@ Integrated Data Pipelines:
   - NSIDC-0771 / NSIDC-0477   : Cryospheric Freeze/Thaw State GeoTIFF (.tif)
   - OpenET / Evapotranspiration: Raster Tile Analysis (.png)
   - NASA POWER                : Daily Agro-Meteorological Surface Telemetry (.csv)
+  - Resend HTTP API           : Secure Cloud Email Dispatcher (Bypasses SMTP Blocks)
   - Sarp AI (Groq LLM)        : Domain-Guarded Agronomic Assistant
 """
 
@@ -17,10 +18,8 @@ import os
 import re
 import ssl
 import time
-import smtplib
+import requests
 from datetime import datetime, timezone
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from pathlib import Path
 import html as html_lib
 
@@ -131,7 +130,6 @@ def sync_cloud_datasets() -> dict[str, str]:
 
     for filename, file_id in GDRIVE_FILES.items():
         file_path = Path(filename)
-        # Verify if file already exists and is non-empty (> 1 KB)
         if file_path.exists() and file_path.stat().st_size > 1024:
             results[filename] = "Verified Local"
             continue
@@ -148,13 +146,12 @@ def sync_cloud_datasets() -> dict[str, str]:
 
     return results
 
-
 # Execute one-time cached dataset sync at startup
 DATASET_SYNC_STATUS = sync_cloud_datasets()
 
 
 # ============================================================================
-# 3. PAGE CONFIGURATION & STYLING
+# 3. PAGE CONFIGURATION & DARK GLASSMORPHIC STYLING
 # ============================================================================
 
 st.set_page_config(
@@ -164,72 +161,164 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom High-End Styling with Bottom-Right AI Attribution Badge
+# Custom High-End Dark Glassmorphic Styling matching Reference Design
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
 
+    /* Global Atmospheric Dark Glassmorphism */
     .stApp {
-        background-color: #f4f7f5;
-        font-family: 'Inter', sans-serif;
-        color: #2c3e50;
+        background: radial-gradient(circle at 50% 12%, #18342f 0%, #0d1e1c 48%, #06110f 100%) !important;
+        font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif !important;
+        color: #f1f5f9 !important;
+        min-height: 100vh;
     }
+
+    /* Floating Frosted Glass Sidebar */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0f3d24 0%, #1b5e3b 100%);
-        color: white;
+        background: linear-gradient(180deg, rgba(8, 18, 16, 0.95) 0%, rgba(13, 29, 25, 0.97) 100%) !important;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
     }
-    [data-testid="stSidebar"] label, [data-testid="stSidebar"] .stMarkdown, [data-testid="stSidebar"] span {
-        color: white !important;
+    [data-testid="stSidebar"] * {
+        color: #e2e8f0 !important;
     }
-    div.stMetric {
-        background: linear-gradient(135deg, #ffffff 0%, #f1f8f4 100%);
-        padding: 18px;
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label {
+        background: rgba(255, 255, 255, 0.04);
+        padding: 9px 14px;
         border-radius: 12px;
-        box-shadow: 0 6px 12px rgba(15, 61, 36, 0.08);
-        border-left: 6px solid #2e7d32;
-        border-top: 1px solid #e2ece5;
+        margin-bottom: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        transition: all 0.2s ease;
     }
-    h1, h2, h3, h4, h5, h6 {
-        color: #0f3d24 !important;
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(52, 211, 153, 0.4);
+    }
+
+    /* Frosted Glass Telemetry Metrics */
+    div.stMetric {
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border-radius: 18px !important;
+        padding: 16px 20px !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35) !important;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    div.stMetric:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 35px rgba(0, 0, 0, 0.45) !important;
+        border-color: rgba(52, 211, 153, 0.35) !important;
+    }
+    div.stMetric label {
+        color: #94a3b8 !important;
+        font-weight: 500 !important;
+        font-size: 0.82rem !important;
+        letter-spacing: 0.03em !important;
+        text-transform: uppercase !important;
+    }
+    div.stMetric div[data-testid="stMetricValue"] {
+        color: #ffffff !important;
         font-weight: 700 !important;
+        font-size: 1.85rem !important;
+    }
+    div.stMetric div[data-testid="stMetricDelta"] {
+        font-weight: 600 !important;
+    }
+
+    /* Headers & Typography */
+    h1, h2, h3, h4, h5, h6 {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.02em !important;
     }
     p, span, label, div {
-        color: #2c3e50;
+        color: #cbd5e1;
     }
-    [data-testid="stSidebar"] p, [data-testid="stSidebar"] span {
-        color: white !important;
+
+    /* Translucent Cards & Containers */
+    div[data-testid="stExpander"] {
+        background: rgba(255, 255, 255, 0.04) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 16px !important;
     }
+
+    /* Form Inputs */
+    .stTextInput input, .stSelectbox div[data-baseweb="select"] > div {
+        background: rgba(255, 255, 255, 0.06) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        color: #ffffff !important;
+        border-radius: 12px !important;
+    }
+    .stTextInput input:focus, .stSelectbox div[data-baseweb="select"] > div:focus {
+        border-color: #34d399 !important;
+        box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.25) !important;
+    }
+
+    /* Buttons - Sleek Pill Shape */
+    .stButton > button {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 9999px !important;
+        padding: 0.55rem 1.75rem !important;
+        font-weight: 600 !important;
+        font-size: 0.95rem !important;
+        box-shadow: 0 4px 18px rgba(16, 185, 129, 0.35) !important;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    .stButton > button:hover {
+        transform: translateY(-2px) scale(1.02) !important;
+        box-shadow: 0 6px 24px rgba(16, 185, 129, 0.55) !important;
+        border-color: rgba(255, 255, 255, 0.4) !important;
+    }
+
+    /* Progress Bar */
+    .stProgress > div > div > div > div {
+        background: linear-gradient(90deg, #10b981 0%, #34d399 100%) !important;
+        border-radius: 9999px !important;
+    }
+
+    /* Alerts */
     .stAlert {
-        background-color: #e8f5e9 !important;
-        color: #0f3d24 !important;
-        border-left: 5px solid #2e7d32 !important;
+        background: rgba(255, 255, 255, 0.06) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border-radius: 14px !important;
+        color: #f1f5f9 !important;
     }
 
     /* Discreet, Honest AI Attribution Badge in Bottom Right */
     .ai-attribution-badge {
         position: fixed;
-        bottom: 12px;
-        right: 16px;
-        background: rgba(15, 61, 36, 0.88);
-        color: #e8f5e9 !important;
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        bottom: 14px;
+        right: 18px;
+        background: rgba(10, 25, 22, 0.88);
+        color: #cbd5e1 !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: 999px;
-        padding: 6px 14px;
+        padding: 7px 16px;
         font-size: 11px;
         font-weight: 500;
         letter-spacing: 0.3px;
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
         z-index: 9999;
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 7px;
         pointer-events: none;
         user-select: none;
     }
     .ai-attribution-badge span {
-        color: #81c784 !important;
+        color: #34d399 !important;
         font-weight: 700;
     }
     </style>
@@ -304,7 +393,6 @@ def ask_groq(system_prompt: str, history: list[dict], retries: int = 3) -> tuple
 
     try:
         client = Groq(api_key=api_key)
-        # Production model endpoints on Groq
         models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
         messages = [{"role": "system", "content": system_prompt}] + history[-8:]
         last_error = ""
@@ -337,34 +425,6 @@ def ask_groq(system_prompt: str, history: list[dict], retries: int = 3) -> tuple
         return None, str(e)
 
 
-def send_gmail_alert(recipient: str, sender: str, password: str, subject: str, body: str) -> tuple[bool, str]:
-    """
-    Dispatches automated SMTP email alerts with timeout and connection safety.
-    Guards against port blocking on free cloud containers.
-    """
-    if not recipient or not sender or not password:
-        return False, "Missing recipient email, sender email, or app password."
-
-    try:
-        clean_password = "".join(password.split())
-        msg = MIMEMultipart()
-        msg['From'] = sender
-        msg['To'] = recipient
-        msg['Subject'] = subject
-        msg.attach(MIMEText(body, 'plain'))
-
-        context = ssl.create_default_context()
-        with smtplib.SMTP('smtp.gmail.com', 587, timeout=8.0) as server:
-            server.starttls(context=context)
-            server.login(sender, clean_password)
-            server.send_message(msg)
-        return True, "Alert notification dispatched successfully to " + recipient
-    except (smtplib.SMTPConnectError, TimeoutError, OSError) as e:
-        return False, f"Cloud Outbound Port Blocked (Common on free tier hosting): {e}"
-    except Exception as e:
-        return False, f"SMTP Error: {str(e)}"
-
-
 def rotation_note(last_crop: str, crop: str) -> str | None:
     """Provides agronomic crop rotation advisory based on previous and current plantings."""
     if not last_crop:
@@ -393,25 +453,27 @@ def show_status(level: str, text: str):
 
 
 def soil_status(pct: float) -> tuple[str, str, str]:
-    """Returns (label, color_level, operational_advice) based on volumetric soil moisture percentage."""
-    if pct < 15:
-        return "Critically Dry", "red", "Severe moisture stress detected. Initiate nocturnal deficit irrigation immediately."
-    if pct < 25:
-        return "Moderate Moisture Deficit", "orange", "Soil moisture is declining. Plan next irrigation cycle focused on critical growth stages."
-    if pct < 35:
-        return "Optimal Soil Moisture", "green", "Root-zone water content is well balanced. No immediate irrigation required."
-    return "Saturated / Excessive", "blue", "Soil moisture is near field capacity. Pause irrigation to avoid aeration loss."
+    """Evaluates SMAP surface volumetric soil moisture status."""
+    if pct < 10.0:
+        return "Severe Desiccation", "red", "Soil moisture is critically low. Direct root-zone irrigation is urgently required."
+    if pct < 15.0:
+        return "Severe Drought Deficit", "red", "Moisture reserves are depleted. Enforce deficit irrigation during off-peak hours."
+    if pct < 20.0:
+        return "Moderate Moisture Stress", "orange", "Subsoil moisture is diminishing. Plan irrigation within 48 to 72 hours."
+    if pct <= 35.0:
+        return "Optimal Agronomic Range", "green", "Root-zone volumetric moisture is adequate for active vegetative growth."
+    return "Saturated / Field Capacity", "blue", "Soil pores are fully saturated. Suspend irrigation to prevent root anoxia."
 
 
-def ndvi_status(value: float) -> tuple[str, str, str]:
-    """Returns (classification, color_level, description) for MODIS NDVI vegetation index."""
-    if value < 0.2:
-        return "Very Sparse / Bare", "red", "Bare soil or severely stunted emergence."
-    if value < 0.4:
-        return "Early Vegetative Growth", "orange", "Emerging crop canopy with low to moderate ground cover."
-    if value < 0.6:
-        return "Healthy Canopy Development", "blue", "Active vegetative expansion and vigorous chlorophyll activity."
-    return "Dense & Robust Biomass", "green", "Peak vegetative biomass and high photosynthetic vigor."
+def ndvi_status(score: float) -> tuple[str, str, str]:
+    """Interprets MODIS Normalized Difference Vegetation Index (NDVI)."""
+    if score < 0.20:
+        return "Dormant / Fallow Soil", "gray", "Sparse vegetative biomass. Characteristic of pre-emergence or residue-covered fields."
+    if score < 0.35:
+        return "Early Vegetative Emergence", "orange", "Emerging crop canopies or slow green-up under early spring cold stress."
+    if score < 0.55:
+        return "Moderate Canopy Growth", "green", "Healthy, actively developing vegetative canopy with good chlorophyll absorption."
+    return "Peak Canopy Vigor", "green", "Dense, closed crop canopy with high biomass index and transpiration rate."
 
 
 # ============================================================================
@@ -424,146 +486,132 @@ def load_nasa_power_csv() -> tuple[pd.DataFrame | None, str]:
     csv_files = sorted(Path(".").rglob("POWER_Point_Daily*.csv"))
     if not csv_files:
         return None, "No local NASA weather file (POWER_Point_Daily*.csv) found."
-    file_path = csv_files[0]
+    filepath = csv_files[0]
+
+    header_line = None
     try:
-        skip_rows = 0
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
             for idx, line in enumerate(f):
-                if "-END HEADER-" in line:
-                    skip_rows = idx + 1
+                if line.startswith("YEAR") or "YEAR,MO,DY" in line:
+                    header_line = idx
                     break
-        df = pd.read_csv(file_path, skiprows=skip_rows).replace(-999, np.nan)
-        if {'YEAR', 'MO', 'DY'}.issubset(df.columns):
-            df['DATE'] = pd.to_datetime(
-                df[['YEAR', 'MO', 'DY']].rename(columns={'YEAR': 'year', 'MO': 'month', 'DY': 'day'}),
-                errors='coerce'
-            )
-        return df, file_path.name
+        if header_line is None:
+            header_line = 0
+        df = pd.read_csv(filepath, skiprows=header_line)
     except Exception as e:
-        return None, str(e)
+        return None, f"Error reading weather CSV file: {e}"
+
+    df.columns = [str(c).strip().upper() for c in df.columns]
+
+    if "DATE" not in df.columns:
+        if {"YEAR", "MO", "DY"}.issubset(df.columns):
+            df["DATE"] = pd.to_datetime(df[["YEAR", "MO", "DY"]].astype(str).agg("-".join, axis=1), errors="coerce")
+        elif "YYYYMMDD" in df.columns:
+            df["DATE"] = pd.to_datetime(df["YYYYMMDD"].astype(str), format="%Y%m%d", errors="coerce")
+        else:
+            df["DATE"] = pd.date_range("2020-04-01", periods=len(df), freq="D")
+
+    df = df.dropna(subset=["DATE"]).sort_values("DATE").reset_index(drop=True)
+
+    numeric_candidates = ["T2M", "T2M_MIN", "T2MIN", "TMIN", "T2M_MAX", "TMAX", "PRECTOTCORR", "PRECTOT", "RH2M", "WS2M"]
+    for col in numeric_candidates:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce").replace(-999.0, np.nan)
+
+    return df, f"Source: NASA POWER Meteorological Telemetry ({filepath.name})"
 
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def get_weather() -> dict | None:
-    """Extracts summary agro-climatic indicators from NASA POWER dataset or synthetic baseline."""
-    df, info = load_nasa_power_csv()
-    if df is None:
-        # High-Fidelity Front Range April 2020 Baseline
-        dates = pd.date_range("2020-04-01", periods=30, freq="D")
-        np.random.seed(42)
-        t_avg = np.array([6.5, 7.2, 5.0, 3.8, 4.2, 8.1, 10.4, 11.2, 13.0, 14.5,
-                          9.8, 6.2, 2.1, 0.8, -1.2, 1.5, 5.4, 8.9, 12.0, 14.2,
-                          15.8, 16.4, 13.1, 11.0, 9.4, 7.8, 10.2, 12.5, 14.1, 15.0])
-        t_min = t_avg - np.random.uniform(7.0, 10.5, size=30)
-        precip = np.zeros(30)
-        precip[[4, 12, 15, 23]] = [2.4, 5.1, 1.2, 3.7]
+    """Extracts summary metrics and validated data frame from NASA POWER observations."""
+    df, note = load_nasa_power_csv()
+    if df is None or df.empty:
+        # Fallback calibrated baseline for Weld County (April 2020 Drought period)
+        dates = pd.date_range("2020-04-01", "2020-04-30", freq="D")
+        t_avg = np.array([5.2, 6.1, 8.4, 9.2, 4.1, 2.0, 3.5, 7.8, 11.2, 13.5,
+                          14.1, 10.2, 6.5, 3.2, 1.8, 4.5, 8.9, 12.1, 15.0, 16.2,
+                          13.8, 10.4, 8.1, 6.9, 9.5, 12.4, 14.8, 17.1, 15.5, 13.0])
+        t_min = t_avg - np.random.uniform(7.0, 10.5, len(t_avg))
+        rain = np.zeros(len(dates))
+        rain[4] = 4.2
+        rain[13] = 6.8
+        rain[21] = 1.4
+        df = pd.DataFrame({"DATE": dates, "T2M": t_avg, "T2M_MIN": t_min, "PRECTOTCORR": rain})
+        note = "Calibrated synthetic baseline (NASA POWER archive offline)"
 
-        df_synth = pd.DataFrame({
-            "DATE": dates,
-            "T2M": t_avg,
-            "T2M_MIN": t_min,
-            "PRECTOTCORR": precip,
-        })
-        return {
-            "df": df_synth,
-            "file": "NASA POWER Weld County Reference Stream",
-            "min_col": "T2M_MIN",
-            "avg_temp": float(t_avg.mean()),
-            "min_temp": float(t_min.min()),
-            "frost_nights": int((t_min < 0).sum()),
-            "rain_total": float(precip.sum()),
-        }
+    min_col = next((c for c in ["T2M_MIN", "T2MIN", "TMIN"] if c in df.columns), None)
+    max_col = next((c for c in ["T2M_MAX", "TMAX"] if c in df.columns), None)
+    rain_col = next((c for c in ["PRECTOTCORR", "PRECTOT"] if c in df.columns), None)
 
-    min_col = "T2M_MIN" if "T2M_MIN" in df.columns else ("T2M" if "T2M" in df.columns else None)
-    avg_temp = float(df["T2M"].mean()) if "T2M" in df.columns else None
-    min_temp = float(df[min_col].min()) if min_col else None
-    frost_nights = int((df[min_col] < 0).sum()) if min_col else None
-    rain_total = float(df["PRECTOTCORR"].sum()) if "PRECTOTCORR" in df.columns else None
-
-    return {
+    summary = {
         "df": df,
-        "file": info,
+        "note": note,
         "min_col": min_col,
-        "avg_temp": None if (avg_temp is not None and np.isnan(avg_temp)) else avg_temp,
-        "min_temp": None if (min_temp is not None and np.isnan(min_temp)) else min_temp,
-        "frost_nights": frost_nights,
-        "rain_total": None if (rain_total is not None and np.isnan(rain_total)) else rain_total,
+        "max_col": max_col,
+        "rain_col": rain_col,
+        "avg_temp": float(df["T2M"].mean()) if "T2M" in df.columns and not df["T2M"].dropna().empty else None,
+        "min_temp": float(df[min_col].min()) if min_col and not df[min_col].dropna().empty else None,
+        "frost_nights": int((df[min_col] < 0).sum()) if min_col else 0,
+        "rain_total": float(df[rain_col].sum()) if rain_col and not df[rain_col].dropna().empty else 0.0,
     }
+    return summary
 
 
-def get_temp_series(kind: str) -> pd.Series | None:
-    """Returns temperature series indexed by DATE."""
+def get_temp_series(kind: str = "min") -> pd.Series | None:
+    """Returns a time series of daily temperatures indexed by DATE."""
     w = get_weather()
-    if w is None or "df" not in w or "DATE" not in w["df"].columns:
+    if w is None or "df" not in w:
         return None
-    col = w["min_col"] if kind == "min" else ("T2M" if "T2M" in w["df"].columns else None)
-    if col is None or col not in w["df"].columns:
+    df = w["df"].copy()
+    if "DATE" not in df.columns:
         return None
-    return w["df"].set_index("DATE")[col]
+    col = w.get("min_col") if kind == "min" else ("T2M" if "T2M" in df.columns else None)
+    if not col or col not in df.columns:
+        return None
+    s = df.set_index("DATE")[col].dropna()
+    return s if not s.empty else None
 
 
-def parse_smap_date(name: str) -> str | None:
-    """Extracts date string from standard SMAP granule filenames."""
-    m = re.search(r"(\d{8})", name)
-    if not m:
-        return None
-    try:
-        return datetime.strptime(m.group(1), "%Y%m%d").strftime("%B %d, %Y")
-    except ValueError:
-        return None
+def parse_smap_date(filename: str) -> str:
+    """Extracts observation date from NASA SMAP file naming convention."""
+    m = re.search(r"SMAP_L3_SM_P_E_(\d{4})(\d{2})(\d{2})", filename)
+    if m:
+        return f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
+    return "April 2020"
 
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def read_smap_summary() -> dict | None:
-    """Parses NASA SMAP L3 Soil Moisture H5 file within Weld County spatial extent."""
-    files = sorted(Path(".").rglob("SMAP*.h5"))
-    if not files:
+    """Reads NASA SMAP HDF5 file volumetric soil moisture metrics safely."""
+    h5_files = sorted(Path(".").rglob("SMAP_L3_SM_P_E_*.h5"))
+    if not h5_files or not H5PY_AVAILABLE:
         return None
-    path = files[0]
-    if not H5PY_AVAILABLE:
-        return {"error": "h5py library is not available.", "file": path.name}
 
+    path = h5_files[0]
     try:
-        with h5py.File(path, "r") as f:
-            candidates = []
-            f.visititems(lambda name, obj: candidates.append(name)
-                         if isinstance(obj, h5py.Dataset) and name.split("/")[-1] in ("soil_moisture", "soil_moisture_pm")
-                         else None)
-            if not candidates:
-                return {"error": "No soil moisture layer detected inside file.", "file": path.name}
+        with h5py.File(str(path), "r") as f:
+            candidates = [
+                "Soil_Moisture_Retrieval_Data_AM/soil_moisture",
+                "Soil_Moisture_Retrieval_Data_PM/soil_moisture_pm",
+            ]
+            ds = next((f[c] for c in candidates if c in f), None)
+            if ds is None:
+                return {"error": "Soil moisture dataset path not found inside HDF5 hierarchy.", "file": path.name}
 
-            candidates.sort(key=lambda n: n.split("/")[-1] != "soil_moisture")
-            sm_path = candidates[0]
-            base = sm_path.split("/")[-1]
-            prefix = sm_path.rsplit("/", 1)[0] + "/" if "/" in sm_path else ""
-            suffix = "_pm" if base.endswith("_pm") else ""
+            arr = ds[:]
+            fill = ds.attrs.get("_FillValue", -9999.0)
+            valid = arr[(arr != fill) & (~np.isnan(arr)) & (arr >= 0.0) & (arr <= 1.0)]
 
-            sm = f[sm_path][()].astype("float64")
-            valid = (sm > 0) & (sm <= 0.8)
-
-            lat_key, lon_key = prefix + "latitude" + suffix, prefix + "longitude" + suffix
-            area = "AOI Geographic Bounding Box"
-            vals = sm[valid]
-
-            if lat_key in f and lon_key in f:
-                lat, lon = f[lat_key][()].astype("float64"), f[lon_key][()].astype("float64")
-                if lat.shape == sm.shape and lon.shape == sm.shape:
-                    w, s, e, n = WELD_BBOX
-                    inbox = valid & (lat >= s) & (lat <= n) & (lon >= w) & (lon <= e)
-                    if inbox.sum() > 0:
-                        vals, area = sm[inbox], "Weld County Agriculture Extent"
-
-            if vals.size == 0:
-                return {"error": "No valid soil moisture pixels over region.", "file": path.name}
+            if valid.size == 0:
+                return {"error": "No valid soil moisture pixels extracted from granule.", "file": path.name}
 
             return {
                 "file": path.name,
-                "date": parse_smap_date(path.name) or "April 21, 2020",
-                "mean_pct": float(vals.mean() * 100),
-                "min_pct": float(vals.min() * 100),
-                "max_pct": float(vals.max() * 100),
-                "n": int(vals.size),
-                "area": area,
+                "date": parse_smap_date(path.name),
+                "mean_pct": float(valid.mean() * 100.0),
+                "min_pct": float(valid.min() * 100.0),
+                "max_pct": float(valid.max() * 100.0),
+                "count": int(valid.size),
             }
     except Exception as e:
         return {"error": str(e), "file": path.name}
@@ -586,6 +634,70 @@ def get_field_snapshot() -> dict:
         "avg_temp": w["avg_temp"] if w else 9.8,
         "rain_total": w["rain_total"] if w else 12.4,
     }
+
+
+def send_alert_email_via_resend(to_email: str = "example@gmail.com") -> dict:
+    """
+    Sends an email securely via Resend HTTP REST API.
+    Bypasses cloud outbound SMTP port restrictions (ports 25, 465, 587).
+    """
+    snapshot = get_field_snapshot()
+    api_key = get_secret("RESEND_API_KEY")
+
+    if not api_key:
+        return {"success": False, "error": "RESEND_API_KEY is missing in Streamlit Secrets or Environment."}
+
+    crop = st.session_state["profile"].get("crop", "Target Crop")
+    farmer = st.session_state["profile"].get("first_name") or "Farm Manager"
+
+    email_body = f"""FARMEDIA AGRO-SATELLITE DECISION SUPPORT SYSTEM
+========================================================================
+Critical Agronomic Alert & Field Status Report · Weld County, Colorado
+Timestamp: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}
+========================================================================
+
+Dear {farmer},
+
+Here is your automated daily agricultural intelligence report generated by Sarp AI:
+
+1. CURRENT FIELD TELEMETRY:
+- Target Crop: {crop}
+- Estimated Surface Soil Moisture (NASA SMAP): {snapshot['soil_pct']:.1f}% ({snapshot['soil_note']})
+- Minimum Ambient Temperature: {snapshot['min_temp']:.1f} °C
+- Average Daily Temperature: {snapshot['avg_temp']:.1f} °C
+- Sub-Zero Frost Nights Count: {snapshot['frost_nights']} night(s)
+- Total Precipitation: {snapshot['rain_total']:.1f} mm
+
+2. OPERATIONAL DIRECTIVES:
+- Initiate nocturnal deficit irrigation (10:00 PM - 06:00 AM) to save ~35% on electrical tariffs.
+- Protect emerging shoot tissue if minimum temperatures approach freezing.
+- Retain surface crop residues to insulate root crowns and prevent moisture loss.
+
+Best regards,
+Sarp AI Agronomy Assistant System · Farmedia Team
+NASA Space Apps Challenge
+"""
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "from": "Sarp AI <onboarding@resend.dev>",
+        "to": [to_email],
+        "subject": f"[Sarp AI] Critical Agronomic Alert & Field Status Report ({crop})",
+        "text": email_body
+    }
+
+    try:
+        response = requests.post("https://api.resend.com/emails", json=payload, headers=headers, timeout=10.0)
+        if response.status_code in (200, 201):
+            return {"success": True, "data": response.json()}
+        else:
+            return {"success": False, "error": f"HTTP {response.status_code}: {response.text}"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 # ============================================================================
@@ -824,17 +936,17 @@ def build_freeze_thaw_map(tif_path: str):
                     extent = (left, right, bottom, top)
                     xs, ys = transform("EPSG:4326", src.crs, [WELD_CENTER[1]], [WELD_CENTER[0]])
                     marker = (xs[0], ys[0])
-                    row, col = src.index(xs[0], ys[0])
-                    if 0 <= row < src.height and 0 <= col < src.width:
-                        px = src.read(1, window=Window(col, row, 1, 1), masked=True)
-                        if not np.ma.is_masked(px[0, 0]):
-                            weld_value = float(px[0, 0])
-                    region = "Weld County Basin and Front Range Corridor"
+
+                    px, py = ~src.transform * (xs[0], ys[0])
+                    ix, iy = int(round(px)), int(round(py))
+                    if 0 <= ix < src.width and 0 <= iy < src.height:
+                        v = src.read(1, window=Window(ix, iy, 1, 1))[0, 0]
+                        weld_value = float(v) if v != src.nodata else None
+                    region = "Target AOI: Colorado Front Range Basin"
             except Exception:
-                data, extent, marker, weld_value = None, None, None, None
+                pass
 
         if data is None:
-            # Memory-safe overview downsampling
             factor = max(src.width // 400, 1)
             data = src.read(1, out_shape=(src.height // factor, src.width // factor), masked=True)
 
@@ -861,7 +973,7 @@ def build_freeze_thaw_map(tif_path: str):
 
 
 # ============================================================================
-# 9. WEATHER HERO BANNER COMPONENT
+# 9. WEATHER HERO BANNER COMPONENT (MATCHING REFERENCE UI)
 # ============================================================================
 
 HERO_TEMPLATE = """<!DOCTYPE html><html><head><meta charset="utf-8"><style>
@@ -933,7 +1045,7 @@ HERO_SKIES = {
 
 
 def build_weather_hero_html(w: dict, snap: dict, name: str) -> str | None:
-    """Builds HTML hero weather overview component."""
+    """Builds HTML hero weather overview component matching the reference design."""
     if not w or "df" not in w:
         return None
     df = w["df"].copy()
@@ -1046,11 +1158,22 @@ with st.sidebar:
 
 
 # ============================================================================
-# 11. PAGE 1: FARMER PROFILE
+# 11. PAGE 1: FARMER PROFILE & EXECUTIVE TELEMETRY COCKPIT
 # ============================================================================
 
 if selected == PAGES[0]:
     st.title("🌾 Weld County Agricultural Decision Support System")
+    st.caption("NASA Multi-Sensor Agro-Satellite Telemetry & Precision Decision Cockpit")
+
+    # Live Executive Hero Cockpit Banner (matching reference design)
+    w = get_weather()
+    snap = get_field_snapshot()
+    if w is not None:
+        hero_html = build_weather_hero_html(w, snap, st.session_state["profile"].get("first_name", "Operator"))
+        if hero_html:
+            components.html(hero_html, height=580)
+            st.divider()
+
     st.markdown("### Step 1: Farm Telemetry & Operator Profile")
     st.write("Configure your farm parameters to enable customized irrigation advice and precision alert dispatch.")
 
@@ -1061,7 +1184,7 @@ if selected == PAGES[0]:
         3. **Soil Moisture:** NASA SMAP radiometer volumetric soil moisture measurements (top 5 cm depth).
         4. **Frost & Freeze/Thaw Map:** Cryospheric freeze state analysis and OpenET spatial thermal mapping.
         5. **Plant Health:** NASA MODIS 250 m 16-day NDVI and EVI vegetative canopy composite indices.
-        6. **Savings, Alerts & Sarp AI:** Pumping schedule cost optimization, automated SMTP dispatches, and guarded agronomic AI.
+        6. **Savings, Alerts & Sarp AI:** Pumping schedule cost optimization, automated SMTP/API dispatches, and guarded agronomic AI.
         """)
 
     p = st.session_state["profile"]
@@ -1173,7 +1296,7 @@ elif selected == PAGES[1]:
 
 elif selected == PAGES[2]:
     st.title("💧 Soil Moisture & Infiltration")
-    st.caption("Surface volumetric soil water content (top 5 cm) monitored by NASA's SMAP L-band radar radiometer.")
+    st.caption("Surface volumetric soil water content (top 5 cm depth) monitored by NASA's SMAP L-band radar radiometer.")
 
     smap = read_smap_summary()
     from_file = bool(smap and "mean_pct" in smap)
@@ -1195,46 +1318,21 @@ elif selected == PAGES[2]:
     st.progress(float(min(max(mean / 50.0, 0.0), 1.0)), text="Volumetric Scale: 0% (Bone Dry) to 50% (Field Capacity / Saturated)")
     show_status(level, f"**{label}.** {advice}")
 
-    if from_file:
-        st.caption(f"📅 Granule Date: {smap.get('date', 'Unknown')} · 📍 Extent: {smap['area']} · 🛰️ Valid Pixels: {smap['n']}")
-    else:
-        st.info(f"Showing regional April 2020 drought baseline ({REFERENCE_SOIL_PCT}%)." +
-                (f" Reason: {smap['error']}" if smap and "error" in smap else ""))
-
-    crop = st.session_state["profile"].get("crop", "Corn")
-    st.markdown(f"#### Irrigation Directives for {crop}")
-    tips = {
-        "red": ["Initiate deficit irrigation immediately. Schedule water delivery between 10:00 PM and 06:00 AM.",
-                "Prioritize moisture to reproductive nodes (flowering and grain-filling phases).",
-                "Maintain surface residue cover to minimize direct capillary evaporation."],
-        "orange": ["Prepare your irrigation distribution schedule over the next 48 to 72 hours.",
-                   "Probe field soil at a 10 cm depth: if soil particles fail to ribbon, apply targeted water.",
-                   "Avoid unnecessary tillage passes that accelerate subsurface moisture loss."],
-        "green": ["Root-zone moisture is balanced. Defer supplemental pumping to conserve energy.",
-                  "Re-evaluate following prolonged periods of elevated ambient temperature or high wind velocity.",
-                  "Ideal window for mechanical weed cultivation and field maintenance."],
-        "blue": ["Halt all irrigation pumping to avert waterlogging and root hypoxia.",
-                 "Inspect field depressions and low-elevation zones for standing runoff.",
-                 "Keep heavy field equipment off wet parcels to prevent severe subsoil compaction."],
-    }
-    for tip in tips[level]:
-        st.markdown(f"- {tip}")
-
     st.divider()
-    st.subheader("📊 Comparative Soil Distribution Chart")
-    chart_choice = st.radio("Chart Type", ["Bar", "Pie", "Line"], horizontal=True)
-    render_chart("soil", chart_choice.lower())
+    st.subheader("🗺️ Spatial Soil Moisture Allocation")
+    render_chart("soil", "bar")
 
-    with st.expander("📘 Technical Scientific Documentation: SMAP L3 Metrics"):
-        st.markdown("""
-        * **Volumetric Soil Moisture (%)** quantifies the percentage of total soil volume occupied by liquid water.
-        * NASA's SMAP instrument utilizes L-band microwave radiometry (1.41 GHz) sensing the **upper 5 cm** of the soil profile.
-        * Thresholds: <15% (Severe water stress / Wilting Point), 15-25% (Deficit Zone), 25-35% (Optimal Plant Available Water).
-        """)
+    st.markdown("### 🚜 Irrigation Scheduling Guidance")
+    if mean < 15:
+        st.error("Severe root-zone moisture deficit. Schedule nocturnal center-pivot application (10:00 PM – 06:00 AM) to maximize water penetration.")
+    elif mean < 25:
+        st.warning("Soil moisture approaching stress threshold. Prepare irrigation cycle within 48 hours.")
+    else:
+        st.success("Adequate root-zone soil water. No supplemental irrigation needed currently.")
 
 
 # ============================================================================
-# 14. PAGE 4: FROST & FREEZE/THAW MAP (INCORPORATING OPENET PNG & SATELLITE RASTER)
+# 14. PAGE 4: FROST & FREEZE/THAW MAP (OPENET PNG & SATELLITE RASTER)
 # ============================================================================
 
 elif selected == PAGES[3]:
@@ -1256,7 +1354,7 @@ elif selected == PAGES[3]:
         else:
             st.success("✅ No freezing temperatures recorded during this observation cycle.")
 
-    # High-Priority Feature: Display OpenET Satellite Raster PNG from Google Drive
+    # Display OpenET Satellite Raster PNG from Google Drive Cache
     st.markdown("#### 🛰️ OpenET / Evapotranspiration & Cryospheric Temperature Raster")
     png_path = Path(ET_RASTER_PNG)
 
@@ -1271,7 +1369,6 @@ elif selected == PAGES[3]:
         except Exception as e:
             st.warning(f"Unable to render raster PNG: {e}")
     else:
-        # If PNG is still syncing, show interactive calendar heatmap as fail-safe
         if series_min is not None and MPL_AVAILABLE:
             draw_calendar_heatmap(series_min)
             st.caption("Blue indicates sub-zero frost nights (<0°C). Each cell displays calendar day and minimum temperature.")
@@ -1326,24 +1423,17 @@ elif selected == PAGES[4]:
     show_status(level, f"**{label}.** {meaning} Delayed green-up aligns with early-season moisture deficits.")
 
     st.divider()
-    st.subheader("📈 16-Day Phenological Trajectory")
-    chart_choice = st.radio("Chart Type", ["Line", "Bar", "Area"], horizontal=True, key="veg_chart_type")
-    render_chart("ndvi", chart_choice.lower())
-
-    with st.expander("📘 Scientific Interpretation: NDVI vs. EVI"):
-        st.markdown("""
-        * **NDVI (Normalized Difference Vegetation Index):** Measures red and near-infrared reflectance ((NIR - Red) / (NIR + Red)) to assess chlorophyll absorption and canopy density.
-        * **EVI (Enhanced Vegetation Index):** Minimizes atmospheric aerosol contamination and sub-canopy soil background noise.
-        """)
+    st.subheader("📈 MODIS NDVI / EVI Phenological Trajectory")
+    render_chart("ndvi", "line")
 
 
 # ============================================================================
-# 16. PAGE 6: SAVINGS, EXPANDED ALERTS & DOMAIN-GUARDED SARP AI
+# 16. PAGE 6: SAVINGS, LIVE RESEND ALERTS & DOMAIN-GUARDED SARP AI
 # ============================================================================
 
 elif selected == PAGES[5]:
     st.title("💰 Savings, Alerts & Sarp AI Copilot")
-    st.caption("Pumping optimization, automated emergency dispatch, and domain-guarded agronomic intelligence.")
+    st.caption("Pumping optimization, automated emergency dispatch via Resend API, and domain-guarded agronomic intelligence.")
 
     st.success("💡 **Core Directive:** Implementing a **20% deficit irrigation schedule** combined with off-peak pumping "
                "cuts energy expenditure by approximately 35% while sustaining yield thresholds during drought.")
@@ -1365,73 +1455,39 @@ elif selected == PAGES[5]:
 
     render_chart("savings", "bar")
 
-    # --- Comprehensive Automated Email Dispatch ---
+    # --- Live Resend HTTP Email Dispatch Integration ---
     st.divider()
-    st.subheader("📧 Precision Emergency Alert System")
-    st.write("When severe drought or freeze hazards are detected, the system dispatches telemetry briefings to your inbox.")
+    st.subheader("📧 Send Live Email Alert")
+    st.write("Transmit real-time satellite telemetry reports to farm operators via secure cloud HTTP API.")
 
-    target_email = st.session_state["profile"].get("email") or "Not configured (Set in Step 1)"
-    st.info(f"**Current Alert Recipient:** `{target_email}`")
+    default_recipient = st.session_state["profile"].get("email") or "example@gmail.com"
+    target_email = st.text_input("Recipient Email Address:", value=default_recipient)
 
-    with st.expander("⚙️ Email Configuration & Test Dispatch"):
-        sender_gmail = st.text_input("Sender Gmail Address", value=get_secret("GMAIL_SENDER") or "farmedia.alerts@gmail.com")
-        app_pass = st.text_input("Gmail App Password (16-Digit)", type="password", value=get_secret("GMAIL_APP_PASSWORD") or "")
-
-        # Expanded, Highly Professional Institutional Alert Email
-        snap = get_field_snapshot()
-        crop_name = st.session_state["profile"].get("crop", "Corn")
-        farmer_name = st.session_state["profile"].get("first_name") or "Farm Operator"
-        sample_subject = f"[FARMEDIA CRITICAL ADVISORY] Moisture Deficit & Freeze Warning · {crop_name} Sector"
-        sample_body = (
-            f"FARMEDIA AGRICULTURAL DECISION SUPPORT SYSTEM (AGRO-SATELLITE DSS)\n"
-            f"Weld County Emergency Telemetry Dispatch · Colorado Front Range\n"
-            f"Timestamp: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}\n"
-            f"{'='*72}\n\n"
-            f"Dear {farmer_name},\n\n"
-            f"This automated advisory has been triggered based on real-time NASA Earth Science\n"
-            f"satellite observations and calibrated surface weather telemetry for your parcel.\n\n"
-            f"1. FIELD TELEMETRY SNAPSHOT\n"
-            f"------------------------------------------------------------------------\n"
-            f"• Target Crop            : {crop_name}\n"
-            f"• Area of Interest       : Weld County, Colorado (40.2827° N, -104.6872° W)\n"
-            f"• NASA SMAP Soil Moisture: {snap['soil_pct']:.1f}% (Critical Threshold: 15.0%)\n"
-            f"• Lowest Ambient Temp    : {snap['min_temp']:.1f} °C\n"
-            f"• Recorded Frost Nights  : {snap['frost_nights']} sub-zero event(s)\n"
-            f"• Total Precipitation    : {snap['rain_total']:.1f} mm\n\n"
-            f"2. AGRONOMIC RISK ASSESSMENT\n"
-            f"------------------------------------------------------------------------\n"
-            f"• FREEZE HAZARD: Surface temperatures below 0 °C will cause cellular damage\n"
-            f"  to unprotected emerging shoot tissue. Postpone warm-season seeding.\n"
-            f"• WATER STRESS : Volumetric soil moisture is severely depressed. Root-zone\n"
-            f"  water tension exceeds optimal extraction levels.\n\n"
-            f"3. ACTIONABLE FIELD DIRECTIVES\n"
-            f"------------------------------------------------------------------------\n"
-            f"A. Irrigation Strategy: Initiate nocturnal deficit irrigation strictly\n"
-            f"   between 10:00 PM and 06:00 AM to eliminate midday vapor pressure loss\n"
-            f"   and secure ~35% savings on electrical pumping tariffs.\n"
-            f"B. Soil Management   : Maintain residue cover to insulate root crowns and\n"
-            f"   retard convective moisture escape.\n"
-            f"C. Seeding Schedule  : Defer sensitive seeding until 5-day running soil\n"
-            f"   temperatures stabilize consistently above 10 °C.\n\n"
-            f"For interactive maps and multi-sensor timeseries, visit your Farmedia Dashboard.\n\n"
-            f"Sincerely,\n"
-            f"Farmedia Operations Team · NASA Space Apps Challenge\n"
-            f"Automated Telemetry Service · Sarp Systems\n"
-        )
-
-        st.text_area("Preview of Telemetry Briefing", value=sample_body, height=220, disabled=True)
-
-        if st.button("🚀 Transmit Emergency Alert Test"):
-            if not st.session_state["profile"].get("email"):
-                st.warning("⚠️ Please provide an email address in Step 1 first.")
-            elif not app_pass:
-                st.warning("⚠️ Gmail App Password is required. Set it in .streamlit/secrets.toml or input above.")
+    if st.button("Send Alert Email Now"):
+        with st.spinner("Sending email via secure HTTP API..."):
+            result = send_alert_email_via_resend(target_email)
+            if result.get("success"):
+                st.success("✅ Email successfully sent via Resend API!")
             else:
-                ok, msg = send_gmail_alert(st.session_state["profile"]["email"], sender_gmail, app_pass, sample_subject, sample_body)
-                if ok:
-                    st.success(f"✅ {msg}")
-                else:
-                    st.error(msg)
+                st.error(f"❌ Failed to send email: {result.get('error')}")
+
+    # Preview of the Telemetry Report
+    with st.expander("📄 View Telemetry Report Preview"):
+        snap = get_field_snapshot()
+        crop_curr = st.session_state["profile"].get("crop", "Corn")
+        preview_text = f"""[FARMEDIA AGRO-SATELLITE INTELLIGENCE REPORT]
+Target Area : Weld County, Colorado (40.2827° N, -104.6872° W)
+Crop Sector : {crop_curr}
+Soil Moisture: {snap['soil_pct']:.1f}% ({snap['soil_note']})
+Lowest Temp : {snap['min_temp']:.1f} °C
+Frost Nights: {snap['frost_nights']} recorded
+Rainfall    : {snap['rain_total']:.1f} mm
+
+Directives:
+- Maintain nocturnal deficit irrigation window (10:00 PM – 06:00 AM).
+- Conserve root-zone moisture via residue retention.
+"""
+        st.text_area("Telemetry Dispatch Body", value=preview_text, height=180, disabled=True)
 
     # --- Domain-Guarded Sarp AI Dialogue ---
     st.divider()
@@ -1458,20 +1514,14 @@ elif selected == PAGES[5]:
             st.markdown(prompt)
 
         profile = st.session_state["profile"]
-        crop = profile.get("crop", "Corn")
-        last_crop = profile.get("last_crop", "Soybeans")
         snap = get_field_snapshot()
-        soil_label = soil_status(snap["soil_pct"])[0]
-
         data_context = f"""
-        [CURRENT FIELD & SATELLITE TELEMETRY]
-        - Operator Target Crop: {crop}
-        - Preceding Rotation: {last_crop}
-        - Location: Weld County, Colorado, USA (40.2827° N, -104.6872° W)
-        - Surface Soil Moisture (NASA SMAP 9km, top 5cm): {snap['soil_pct']:.1f}% ({soil_label})
-        - MODIS NDVI Canopy Vigor: 0.28 to 0.32 (Emergence Phase)
-        - Lowest Ambient Temperature: {snap['min_temp']:.1f} °C
-        - Recorded Sub-Zero Frost Nights: {snap['frost_nights']}
+        Current Telemetry Grounding (Weld County, CO):
+        - Primary Crop: {profile.get('crop', 'Corn')}
+        - Preceding Crop: {profile.get('last_crop', 'Soybeans')}
+        - Surface Soil Moisture: {snap['soil_pct']:.1f}% ({snap['soil_note']})
+        - Lowest Recorded Temperature: {snap['min_temp']:.1f} °C
+        - Freezing Nights (<0°C): {snap['frost_nights']}
         - Cumulative Rainfall: {snap['rain_total']:.1f} mm
         - Strategic Pumping Window: 10:00 PM – 06:00 AM (35% off-peak tariff savings)
         """
@@ -1513,30 +1563,24 @@ elif selected == PAGES[5]:
 
         if error:
             st.error(f"AI Service Notice: {error}")
-            ai_reply = (
-                f"I am currently operating in telemetry fallback mode. Current SMAP soil moisture stands at "
-                f"{snap['soil_pct']:.1f}% with an overnight low of {snap['min_temp']:.1f} °C. "
-                "We recommend maintaining nocturnal deficit irrigation to conserve water and protect emerging crops."
-            )
+        elif ai_reply:
+            charts_to_render = []
+            chart_matches = re.findall(r"\[CHART:\s*([a-zA-Z0-9_]+)\s*,\s*([a-zA-Z0-9_]+)\]", ai_reply)
+            for raw_k, raw_t in chart_matches:
+                k = KEY_ALIASES.get(raw_k.lower(), raw_k.lower())
+                t = TYPE_ALIASES.get(raw_t.lower(), raw_t.lower())
+                if k in CHART_KEYS:
+                    charts_to_render.append({"key": k, "type": t})
 
-        # Parse tags
-        tag_re = re.compile(r"\[(?:CHART|GRAFIK)\s*:\s*([^\]]*)\]", re.IGNORECASE)
-        charts = []
-        for m in tag_re.finditer(ai_reply):
-            parts = [p.strip().lower() for p in re.split(r"[,;]", m.group(1))]
-            k = KEY_ALIASES.get(parts[0], parts[0]) if parts else ""
-            t = TYPE_ALIASES.get(parts[1], "line") if len(parts) > 1 else "line"
-            if k in CHART_KEYS:
-                charts.append({"key": k, "type": t})
+            cleaned_reply = re.sub(r"\[CHART:\s*[a-zA-Z0-9_]+\s*,\s*[a-zA-Z0-9_]+\]", "", ai_reply).strip()
 
-        clean_reply = tag_re.sub("", ai_reply).strip()
+            st.session_state["ai_messages"].append({
+                "role": "assistant",
+                "content": cleaned_reply,
+                "charts": charts_to_render
+            })
 
-        st.session_state["ai_messages"].append({
-            "role": "assistant",
-            "content": clean_reply,
-            "charts": charts[:2]
-        })
-        with st.chat_message("assistant"):
-            st.markdown(clean_reply)
-            for ch in charts[:2]:
-                render_chart(ch["key"], ch["type"])
+            with st.chat_message("assistant"):
+                st.markdown(cleaned_reply)
+                for ch in charts_to_render:
+                    render_chart(ch["key"], ch["type"])
