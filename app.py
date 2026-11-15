@@ -3,8 +3,8 @@ import gdown
 
 # --- OTOMATİK DRIVE İNDİRME YAMASI ---
 DRIVE_FILES = {
-    "MOD13Q1.A2020097.h09v04.061.2020332100419.hdf": "https://drive.google.com/file/d/1AUBcjJgitFUdlQPJuFQm-cDq-YMZmKPe/view?usp=drive_link",
-    "NH_PROBABILISTIC_AM_FT_2020_day112.tif": "https://drive.google.com/file/d/1Z3Lx2I84FrZLvu0_W4w4uD6gFrrvgA3G/view?usp=drive_link",
+    "SMAP_L3_SM_P_E_20200421_R19240_001.hdf": "https://drive.google.com/file/d/1AUBcjJgitFUdlQPJuFQm-cDq-YMZmKPe/view?usp=drive_link",
+    "SMAP_L3_SM_P_E_20200421_R19240_001.tif": "https://drive.google.com/file/d/1Z3Lx2I84FrZLvu0_W4w4uD6gFrrvgA3G/view?usp=drive_link",
     "SMAP_L3_SM_P_E_20200421_R19240_001.h5": "https://drive.google.com/file/d/1Z3Lx2I84FrZLvu0_W4w4uD6gFrrvgA3G/view?usp=drive_link"
 }
 
@@ -145,7 +145,7 @@ if "ai_messages" not in st.session_state:
     st.session_state.ai_messages = [{
         "role": "assistant",
         "content": (
-            "Hello! I'm **Sarp AI**, the smart farming assistant from Sarp Holdings. "
+            "Hello! I'm **Sarp AI**, the smart farming assistant from Sarp Systems. "
             "Ask me about your fields, irrigation timing, frost risk or savings. "
             "I can also draw charts, for example: *\"Show soil moisture as a pie chart\"*."
         ),
@@ -917,7 +917,7 @@ def build_weather_hero_html(w, snap, name):
 
 # --- 8. SIDEBAR ---
 with st.sidebar:
-    st.markdown("## 🌾 Sarp Holdings")
+    st.markdown("## 🌾 Sarp Systems")
     st.caption("Smart Farming Assistant · Weld County")
     st.divider()
 
