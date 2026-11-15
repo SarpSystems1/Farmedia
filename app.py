@@ -84,6 +84,7 @@ CROPS = [
     "Sorghum", "Soybeans", "Dry Beans", "Potatoes", "Oats", "Sunflowers", "Millet",
 ]
 LAST_SEASON_OPTIONS = CROPS + ["Fallow (nothing planted)"]
+FUTURE_SEASON_OPTIONS = CROPS + ["Fallow / Cover Crop"]
 LEGUMES = {"Alfalfa", "Soybeans", "Dry Beans"}
 
 PAGES = [
@@ -167,7 +168,7 @@ st.set_page_config(
 # Custom High-End Dark Glassmorphic Styling matching Reference Design
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
 
     /* Global Atmospheric Dark Glassmorphism */
     .stApp {
@@ -200,6 +201,17 @@ st.markdown("""
         border-color: rgba(52, 211, 153, 0.4);
     }
 
+    /* Sidebar Portfolio Frosted Card */
+    .sidebar-portfolio-card {
+        background: rgba(255, 255, 255, 0.04);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: 16px;
+        padding: 14px 16px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+
     /* Frosted Glass Telemetry Metrics */
     div.stMetric {
         background: rgba(255, 255, 255, 0.05) !important;
@@ -227,6 +239,7 @@ st.markdown("""
         color: #ffffff !important;
         font-weight: 700 !important;
         font-size: 1.85rem !important;
+        font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif !important;
     }
     div.stMetric div[data-testid="stMetricDelta"] {
         font-weight: 600 !important;
@@ -234,9 +247,10 @@ st.markdown("""
 
     /* Headers & Typography */
     h1, h2, h3, h4, h5, h6 {
+        font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif !important;
         color: #ffffff !important;
         font-weight: 700 !important;
-        letter-spacing: -0.02em !important;
+        letter-spacing: -0.025em !important;
     }
     p, span, label, div {
         color: #cbd5e1;
@@ -259,6 +273,29 @@ st.markdown("""
         border-radius: 12px !important;
     }
     .stTextInput input:focus, .stSelectbox div[data-baseweb="select"] > div:focus {
+        border-color: #34d399 !important;
+        box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.25) !important;
+    }
+
+    /* MultiSelect Tag Chips (Emerald Glass Look) */
+    .stMultiSelect div[data-baseweb="tag"] {
+        background: rgba(16, 185, 129, 0.18) !important;
+        border: 1px solid rgba(52, 211, 153, 0.4) !important;
+        border-radius: 8px !important;
+        padding: 2px 6px !important;
+    }
+    .stMultiSelect div[data-baseweb="tag"] span {
+        color: #f1f5f9 !important;
+        font-weight: 500 !important;
+        font-size: 0.85rem !important;
+    }
+    .stMultiSelect div[data-baseweb="select"] > div {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        border-radius: 14px !important;
+        color: #ffffff !important;
+    }
+    .stMultiSelect div[data-baseweb="select"] > div:focus-within {
         border-color: #34d399 !important;
         box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.25) !important;
     }
@@ -299,24 +336,24 @@ st.markdown("""
 
     /* Enhanced Frosted Glass Windows & Cards (Buzul Cam Efektli Pencereler) */
     .glass-card {
-        background: rgba(15, 34, 30, 0.65) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        background: rgba(15, 34, 30, 0.68) !important;
+        backdrop-filter: blur(24px) !important;
+        -webkit-backdrop-filter: blur(24px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.13) !important;
         border-radius: 20px !important;
         padding: 22px 24px !important;
-        box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
         margin-bottom: 20px !important;
         transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     }
     .glass-card:hover {
         border-color: rgba(52, 211, 153, 0.35) !important;
-        box-shadow: 0 18px 42px rgba(0, 0, 0, 0.48) !important;
+        box-shadow: 0 20px 44px rgba(0, 0, 0, 0.48) !important;
     }
     .glass-card-emerald {
         background: rgba(16, 185, 129, 0.08) !important;
-        backdrop-filter: blur(18px) !important;
-        -webkit-backdrop-filter: blur(18px) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
         border: 1px solid rgba(52, 211, 153, 0.28) !important;
         border-radius: 18px !important;
         padding: 20px 22px !important;
@@ -325,8 +362,8 @@ st.markdown("""
     }
     .glass-card-amber {
         background: rgba(245, 158, 11, 0.08) !important;
-        backdrop-filter: blur(18px) !important;
-        -webkit-backdrop-filter: blur(18px) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
         border: 1px solid rgba(245, 158, 11, 0.3) !important;
         border-radius: 18px !important;
         padding: 20px 22px !important;
@@ -335,8 +372,8 @@ st.markdown("""
     }
     .glass-card-rose {
         background: rgba(239, 68, 68, 0.08) !important;
-        backdrop-filter: blur(18px) !important;
-        -webkit-backdrop-filter: blur(18px) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
         border: 1px solid rgba(239, 68, 68, 0.3) !important;
         border-radius: 18px !important;
         padding: 20px 22px !important;
@@ -345,13 +382,70 @@ st.markdown("""
     }
     .glass-card-cyan {
         background: rgba(14, 165, 233, 0.08) !important;
-        backdrop-filter: blur(18px) !important;
-        -webkit-backdrop-filter: blur(18px) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
         border: 1px solid rgba(56, 189, 248, 0.28) !important;
         border-radius: 18px !important;
         padding: 20px 22px !important;
         margin-bottom: 18px !important;
         box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    /* Subcard for season categories in profile display */
+    .glass-subcard {
+        background: rgba(255, 255, 255, 0.04);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: 14px;
+        padding: 14px 16px;
+        transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+    .glass-subcard:hover {
+        border-color: rgba(52, 211, 153, 0.35);
+        transform: translateY(-2px);
+    }
+
+    /* Badges for crops */
+    .crop-badge-past {
+        display: inline-block;
+        background: rgba(59, 130, 246, 0.16);
+        border: 1px solid rgba(147, 197, 253, 0.35);
+        color: #bfdbfe;
+        border-radius: 999px;
+        padding: 3px 10px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    .crop-badge-curr {
+        display: inline-block;
+        background: rgba(16, 185, 129, 0.2);
+        border: 1px solid rgba(52, 211, 153, 0.45);
+        color: #a7f3d0;
+        border-radius: 999px;
+        padding: 3px 10px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    .crop-badge-future {
+        display: inline-block;
+        background: rgba(245, 158, 11, 0.18);
+        border: 1px solid rgba(251, 191, 36, 0.35);
+        color: #fde68a;
+        border-radius: 999px;
+        padding: 3px 10px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    .pill-status {
+        background: rgba(16, 185, 129, 0.2);
+        border: 1px solid rgba(52, 211, 153, 0.4);
+        color: #6ee7b7;
+        border-radius: 999px;
+        padding: 4px 12px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
     }
 
     /* Mobile Responsive Layout Fixes (Prevents Columns & Text Overlap) */
@@ -427,6 +521,9 @@ st.markdown("""
 DEFAULT_PROFILE = {
     "first_name": "",
     "last_name": "",
+    "past_crops": ["Soybeans"],
+    "current_crops": ["Corn"],
+    "future_crops": ["Winter Wheat"],
     "crop": "Corn",
     "last_crop": "Soybeans",
     "email": "",
@@ -439,6 +536,12 @@ if "profile" not in st.session_state:
 else:
     for k, v in DEFAULT_PROFILE.items():
         st.session_state["profile"].setdefault(k, v)
+    if not isinstance(st.session_state["profile"].get("past_crops"), list):
+        st.session_state["profile"]["past_crops"] = [st.session_state["profile"].get("last_crop", "Soybeans")]
+    if not isinstance(st.session_state["profile"].get("current_crops"), list):
+        st.session_state["profile"]["current_crops"] = [st.session_state["profile"].get("crop", "Corn")]
+    if not isinstance(st.session_state["profile"].get("future_crops"), list):
+        st.session_state["profile"]["future_crops"] = ["Winter Wheat"]
 
 if "ai_messages" not in st.session_state:
     st.session_state["ai_messages"] = [{
@@ -548,19 +651,53 @@ def ask_groq(system_prompt: str, history: list[dict], retries: int = 3) -> tuple
         return None, str(e)
 
 
-def rotation_note(last_crop: str, crop: str) -> str | None:
-    """Provides agronomic crop rotation advisory based on previous and current plantings."""
-    if not last_crop:
+def rotation_note(past: str | list[str], current: str | list[str], future: str | list[str] | None = None) -> str | None:
+    """Provides comprehensive agronomic crop rotation advisory based on multi-season plantings."""
+    past_list = [past] if isinstance(past, str) else list(past or [])
+    curr_list = [current] if isinstance(current, str) else list(current or [])
+    fut_list = [future] if isinstance(future, str) else list(future or [])
+
+    if not past_list and not curr_list:
         return None
-    if last_crop.startswith("Fallow"):
-        return "The field was fallow last season, conserving subsoil moisture reserves. Monitor for early-season weed emergence."
-    if last_crop == crop:
-        return (f"{crop} was also cultivated last season. Monocropping increases vulnerability to soil-borne pathogens "
-                "and nutrient depletion. Integrate organic soil amendments or plan a diversified rotation next season.")
-    if last_crop in LEGUMES and crop not in LEGUMES:
-        return (f"Preceding legume ({last_crop}) enhanced residual root-zone soil nitrogen. "
-                f"You may safely reduce synthetic nitrogen fertilizer applications for {crop} by 15-20%. Verify with a soil test.")
-    return f"Transitioning from {last_crop} to {crop} maintains healthy soil biological diversity and interrupts pest cycles."
+
+    notes = []
+
+    # 1. Fallow in previous season
+    fallow_past = any(c.lower().startswith("fallow") for c in past_list)
+    if fallow_past:
+        notes.append("• <b>Subsoil Moisture Reserve:</b> Fields fallowed last season conserved deep root-zone moisture, aiding early vegetative development.")
+
+    # 2. Monocropping check
+    monocrop = set(curr_list).intersection(set(past_list))
+    monocrop_clean = [c for c in monocrop if not c.lower().startswith("fallow")]
+    if monocrop_clean:
+        crops_str = ", ".join(monocrop_clean)
+        notes.append(f"• <b>Monocropping Risk Alert:</b> {crops_str} cultivated consecutively. Continuous monoculture exacerbates root pathogen persistence and specific micronutrient depletion. Supplement with organic soil amendments or plan rotation next season.")
+
+    # 3. Preceding legumes
+    past_legumes = [c for c in past_list if c in LEGUMES]
+    curr_non_legumes = [c for c in curr_list if c not in LEGUMES and not c.lower().startswith("fallow")]
+    if past_legumes and curr_non_legumes:
+        leg_str = ", ".join(past_legumes)
+        non_leg_str = ", ".join(curr_non_legumes)
+        notes.append(f"• <b>Biological Nitrogen Credit:</b> Preceding legumes ({leg_str}) enhanced residual root-zone soil nitrogen. You may safely reduce synthetic nitrogen fertilizer applications for {non_leg_str} by 15–20% based on soil testing.")
+
+    # 4. Rotation diversity
+    distinct = set(curr_list) - set(past_list)
+    distinct_clean = [c for c in distinct if not c.lower().startswith("fallow")]
+    if distinct_clean and not monocrop_clean:
+        notes.append(f"• <b>Soil Health & Pest Interruption:</b> Transitioning to {', '.join(distinct_clean)} maintains healthy soil microbial diversity and disrupts pest life cycles.")
+
+    # 5. Future season planning
+    if fut_list:
+        fut_legumes = [c for c in fut_list if c in LEGUMES]
+        fut_wheat = [c for c in fut_list if "Wheat" in c]
+        if fut_legumes:
+            notes.append(f"• <b>Upcoming Rotation Strategy:</b> Planning legumes ({', '.join(fut_legumes)}) for next season will replenish active soil organic nitrogen and improve crumb structure.")
+        elif fut_wheat and any(c in ["Corn", "Soybeans"] for c in curr_list):
+            notes.append("• <b>Winter Wheat Planning:</b> Ensure current crops are harvested with adequate margin before late-September drilling for optimal tillering prior to winter freeze.")
+
+    return "<br>".join(notes) if notes else "Multi-crop rotational diversity maintains healthy soil biology and resilience against drought stress."
 
 
 def show_status(level: str, text: str):
@@ -821,8 +958,14 @@ def send_alert_email_via_resend(to_email: str = "sarpsystems.test@gmail.com") ->
     if not api_key:
         return {"success": False, "error": "RESEND_API_KEY is missing in Streamlit Secrets or Environment."}
 
-    crop = st.session_state["profile"].get("crop", "Target Crop")
-    farmer = st.session_state["profile"].get("first_name") or "Farm Manager"
+    p = st.session_state["profile"]
+    current_crops = p.get("current_crops") or [p.get("crop", "Target Crop")]
+    crops_str = ", ".join(current_crops)
+    past_crops = p.get("past_crops") or [p.get("last_crop", "Preceding Season")]
+    past_str = ", ".join(past_crops)
+    future_crops = p.get("future_crops") or ["Upcoming Season"]
+    future_str = ", ".join(future_crops)
+    farmer = p.get("first_name") or "Farm Manager"
 
     email_body = f"""FARMEDIA AGRO-SATELLITE DECISION SUPPORT SYSTEM
 ========================================================================
@@ -835,7 +978,9 @@ Dear {farmer},
 Here is your automated daily agricultural intelligence report generated by Sarp AI:
 
 1. CURRENT FIELD TELEMETRY:
-- Target Crop: {crop}
+- Currently Planted Crops: {crops_str}
+- Preceding Season Rotation: {past_str}
+- Planned Upcoming Plantings: {future_str}
 - Estimated Surface Soil Moisture (NASA SMAP): {snapshot['soil_pct']:.1f}% ({snapshot['soil_note']})
 - Minimum Ambient Temperature: {snapshot['min_temp']:.1f} °C
 - Average Daily Temperature: {snapshot['avg_temp']:.1f} °C
@@ -863,7 +1008,7 @@ NASA Space Apps Challenge
     payload = {
         "from": "Sarp AI <onboarding@resend.dev>",
         "to": [target],
-        "subject": f"[Sarp AI] Critical Agronomic Alert & Field Status Report ({crop})",
+        "subject": f"[Sarp AI] Critical Agronomic Alert & Field Status Report ({crops_str})",
         "text": email_body
     }
 
@@ -1364,9 +1509,25 @@ with st.sidebar:
     st.divider()
     p = st.session_state["profile"]
     if p.get("submitted", False):
-        st.markdown(f"👤 **Operator:** {p.get('first_name', 'Farmer')} {p.get('last_name', '')}")
-        st.markdown(f"🌱 **Primary Crop:** `{p.get('crop', 'Corn')}`")
-        st.markdown(f"🕒 **Preceding Season:** `{p.get('last_crop', 'Soybeans')}`")
+        curr_str = ", ".join(p.get("current_crops", [p.get("crop", "Corn")]))
+        past_str = ", ".join(p.get("past_crops", [p.get("last_crop", "Soybeans")]))
+        fut_str = ", ".join(p.get("future_crops", ["Winter Wheat"]))
+        
+        st.markdown(f"""
+            <div class="sidebar-portfolio-card">
+                <div style="font-size:0.75rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; font-weight:600;">Farm Operator</div>
+                <div style="font-weight:700; font-size:1.02rem; color:#ffffff; margin:2px 0 10px;">{html_lib.escape(p.get('first_name', 'Farmer'))} {html_lib.escape(p.get('last_name', ''))}</div>
+                <div style="font-size:0.83rem; margin-bottom:6px;">
+                    <span style="color:#6ee7b7; font-weight:600;">🌱 Planted:</span> <span style="color:#e2e8f0;">{html_lib.escape(curr_str)}</span>
+                </div>
+                <div style="font-size:0.83rem; margin-bottom:6px;">
+                    <span style="color:#93c5fd; font-weight:600;">🕒 Previous:</span> <span style="color:#cbd5e1;">{html_lib.escape(past_str)}</span>
+                </div>
+                <div style="font-size:0.83rem;">
+                    <span style="color:#fcd34d; font-weight:600;">🔮 Planned:</span> <span style="color:#cbd5e1;">{html_lib.escape(fut_str)}</span>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
         st.divider()
 
     st.info(
@@ -1383,26 +1544,17 @@ with st.sidebar:
 
 if selected == PAGES[0]:
     st.title("🌾 Weld County Agricultural Decision Support System")
-    st.caption("NASA Multi-Sensor Agro-Satellite Telemetry & Precision Decision Cockpit")
-
-    # Live Executive Hero Cockpit Banner (matching reference design)
-    w = get_weather()
-    snap = get_field_snapshot()
-    if w is not None:
-        hero_html = build_weather_hero_html(w, snap, st.session_state["profile"].get("first_name", "Operator"))
-        if hero_html:
-            components.html(hero_html, height=580)
-            st.divider()
+    st.caption("NASA Multi-Sensor Agro-Satellite Telemetry & Precision Multi-Season Crop Cockpit")
 
     st.markdown("### Step 1: Farm Telemetry & Operator Profile")
-    st.write("Configure your farm parameters to enable customized irrigation advice and precision alert dispatch.")
+    st.write("Configure your multi-season crop portfolio and operator parameters to enable precision satellite monitoring and irrigation optimization.")
 
     # Buzul cam efektli iş akışı rehberi
     st.markdown("""
         <div class="glass-card">
             <h4 style="margin-top:0; color:#34d399 !important;">ℹ️ Module Architecture & Workflow Guide</h4>
             <div style="font-size: 0.92rem; line-height: 1.6; color: #cbd5e1;">
-                <b>1. Farmer Profile:</b> Specify crop variety, rotation history, and communication endpoints.<br>
+                <b>1. Farmer Profile:</b> Configure multi-season crop schedule (past, present, and planned rotations) and contact endpoints.<br>
                 <b>2. Weather & Crop Advice:</b> NASA POWER surface temperature, precipitation forcing, and agronomic recommendations.<br>
                 <b>3. Soil Moisture:</b> NASA SMAP radiometer volumetric soil moisture measurements (top 5 cm depth).<br>
                 <b>4. Frost & Freeze/Thaw Map:</b> Cryospheric freeze state analysis and OpenET spatial thermal mapping.<br>
@@ -1417,45 +1569,104 @@ if selected == PAGES[0]:
         c1, c2 = st.columns(2)
         with c1:
             fname = st.text_input("First Name", value=p.get("first_name", ""))
-            crop_type = st.selectbox(
-                "Primary Target Crop (Current Season)", CROPS,
-                index=CROPS.index(p["crop"]) if p.get("crop") in CROPS else 0,
-                help="The primary crop currently under cultivation in your field."
-            )
+            email = st.text_input("Operator Email (For Emergency Telemetry Alerts)", value=p.get("email", ""))
         with c2:
             lname = st.text_input("Last Name", value=p.get("last_name", ""))
-            last_crop = st.selectbox(
-                "Preceding Crop (Previous Season)", LAST_SEASON_OPTIONS,
-                index=LAST_SEASON_OPTIONS.index(p["last_crop"]) if p.get("last_crop") in LAST_SEASON_OPTIONS else 0,
-                help="Preceding crop history determines residual nitrogen credits and pest disease risks."
-            )
-        email = st.text_input("Operator Email (For Emergency Telemetry Alerts)", value=p.get("email", ""))
-        st.text_input("Target Area of Interest (Fixed)", value=p.get("county", ""), disabled=True)
+            st.text_input("Target Area of Interest (Fixed)", value=p.get("county", ""), disabled=True)
 
-        submitted = st.form_submit_button("Save Configuration & Launch Telemetry 🚀")
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("""
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 14px 18px; margin-bottom: 12px;">
+                <h4 style="margin: 0 0 4px 0; color: #34d399 !important;">🌾 Multi-Season Crop Schedule (Max 4 Selections per Season)</h4>
+                <div style="font-size: 0.88rem; color: #94a3b8;">
+                    Specify crops across seasons to allow Sarp AI to calculate accurate rotation nitrogen credits, pest cycles, and water demand.
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+        col_crop1, col_crop2, col_crop3 = st.columns(3)
+        with col_crop1:
+            default_past = [c for c in p.get("past_crops", ["Soybeans"]) if c in LAST_SEASON_OPTIONS]
+            past_crops_sel = st.multiselect(
+                "🕒 Previous Season (Geçen Sezon)",
+                options=LAST_SEASON_OPTIONS,
+                default=default_past if default_past else [LAST_SEASON_OPTIONS[0]],
+                max_selections=4,
+                help="Select up to 4 crops cultivated in your field during the preceding season."
+            )
+        with col_crop2:
+            default_curr = [c for c in p.get("current_crops", ["Corn"]) if c in CROPS]
+            curr_crops_sel = st.multiselect(
+                "🌱 Currently Planted (Şu Anda Ekili)",
+                options=CROPS,
+                default=default_curr if default_curr else [CROPS[0]],
+                max_selections=4,
+                help="Select up to 4 crops actively planted and growing in your parcels right now."
+            )
+        with col_crop3:
+            default_fut = [c for c in p.get("future_crops", ["Winter Wheat"]) if c in FUTURE_SEASON_OPTIONS]
+            fut_crops_sel = st.multiselect(
+                "🔮 Planned Next Season (Gelecek Sezon)",
+                options=FUTURE_SEASON_OPTIONS,
+                default=default_fut if default_fut else [FUTURE_SEASON_OPTIONS[1]],
+                max_selections=4,
+                help="Select up to 4 crops planned for seeding in the upcoming season."
+            )
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        submitted = st.form_submit_button("Save Multi-Season Portfolio & Launch Telemetry 🚀")
         if submitted:
-            if fname and email:
+            if not curr_crops_sel:
+                st.error("Please select at least one currently planted crop.")
+            elif fname and email:
                 st.session_state["profile"].update({
-                    "first_name": fname, "last_name": lname, "crop": crop_type,
-                    "last_crop": last_crop, "email": email, "submitted": True
+                    "first_name": fname,
+                    "last_name": lname,
+                    "past_crops": past_crops_sel if past_crops_sel else ["Fallow (nothing planted)"],
+                    "current_crops": curr_crops_sel,
+                    "future_crops": fut_crops_sel if fut_crops_sel else ["Corn"],
+                    "crop": curr_crops_sel[0] if curr_crops_sel else "Corn",
+                    "last_crop": past_crops_sel[0] if past_crops_sel else "Fallow (nothing planted)",
+                    "email": email,
+                    "submitted": True
                 })
-                st.success("Configuration verified and saved! Navigate to Step 2 via sidebar.")
+                st.success("Multi-season portfolio verified and saved! Navigate to Step 2 via sidebar.")
             else:
                 st.error("Please supply at least a First Name and Email address to enable telemetry.")
 
     if st.session_state["profile"].get("submitted"):
         p = st.session_state["profile"]
-        note = rotation_note(p["last_crop"], p["crop"])
+        note = rotation_note(p.get("past_crops", []), p.get("current_crops", []), p.get("future_crops", []))
+
+        past_badges = " ".join([f'<span class="crop-badge-past">🕒 {html_lib.escape(c)}</span>' for c in p.get("past_crops", [])])
+        current_badges = " ".join([f'<span class="crop-badge-curr">🌱 {html_lib.escape(c)}</span>' for c in p.get("current_crops", [])])
+        future_badges = " ".join([f'<span class="crop-badge-future">🔮 {html_lib.escape(c)}</span>' for c in p.get("future_crops", [])])
+
         st.markdown(f"""
             <div class="glass-card-emerald">
-                <h4 style="margin-top:0; color:#34d399 !important;">👤 Active Operator Profile</h4>
-                <div style="font-size:0.95rem; line-height: 1.6;">
-                    <b>Operator:</b> {p['first_name']} {p['last_name']} &nbsp;|&nbsp; 
-                    🌱 <b>Current Crop:</b> {p['crop']} &nbsp;|&nbsp; 
-                    🕒 <b>Previous Season:</b> {p['last_crop']}<br>
-                    📧 <b>Emergency Alerts Endpoint:</b> <code>{p['email']}</code>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 12px;">
+                    <h4 style="margin: 0; color: #34d399 !important;">👤 Active Operator Portfolio</h4>
+                    <span class="pill-status">✅ Multi-Season Linked</span>
                 </div>
-                {f'<div style="margin-top:10px; color:#a7f3d0;">🔄 <b>Agronomic Advisory:</b> {note}</div>' if note else ''}
+                <div style="font-size: 0.95rem; line-height: 1.6; color: #f1f5f9; margin-bottom: 14px;">
+                    <b>Farm Operator:</b> {html_lib.escape(p['first_name'])} {html_lib.escape(p['last_name'])} &nbsp;|&nbsp; 
+                    📧 <b>Emergency Dispatch Endpoint:</b> <code>{html_lib.escape(p['email'])}</code>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 10px;">
+                    <div class="glass-subcard">
+                        <small style="color: #94a3b8; font-weight: 600; text-transform: uppercase;">🕒 Previous Season (Geçen Sezon)</small>
+                        <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px;">{past_badges}</div>
+                    </div>
+                    <div class="glass-subcard" style="border-color: rgba(52, 211, 153, 0.4); background: rgba(16, 185, 129, 0.12);">
+                        <small style="color: #6ee7b7; font-weight: 600; text-transform: uppercase;">🌱 Currently Planted (Şu Anda Ekili)</small>
+                        <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px;">{current_badges}</div>
+                    </div>
+                    <div class="glass-subcard">
+                        <small style="color: #94a3b8; font-weight: 600; text-transform: uppercase;">🔮 Planned Next Season (Gelecek Sezon)</small>
+                        <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px;">{future_badges}</div>
+                    </div>
+                </div>
+                {f'<div style="margin-top:14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); color:#a7f3d0; font-size: 0.92rem;">🔄 <b>Agronomic Multi-Season Advisory:</b><br>{note}</div>' if note else ''}
             </div>
         """, unsafe_allow_html=True)
 
@@ -1509,12 +1720,16 @@ elif selected == PAGES[1]:
 
         st.divider()
         p = st.session_state["profile"]
-        note = rotation_note(p["last_crop"], p["crop"]) if p.get("submitted") else None
+        past_c = p.get("past_crops", [p.get("last_crop", "Soybeans")])
+        curr_c = p.get("current_crops", [p.get("crop", "Corn")])
+        fut_c = p.get("future_crops", ["Winter Wheat"])
+        note = rotation_note(past_c, curr_c, fut_c) if p.get("submitted") else None
+        curr_label = ", ".join(curr_c)
         if note:
             st.markdown(f"""
                 <div class="glass-card-emerald">
-                    <h5 style="margin-top:0; color:#34d399 !important;">🔄 Crop Rotation Advisory for {p['crop']}</h5>
-                    <div style="font-size:0.92rem;">{note}</div>
+                    <h5 style="margin-top:0; color:#34d399 !important;">🔄 Multi-Season Crop Rotation Advisory ({curr_label})</h5>
+                    <div style="font-size:0.92rem; line-height:1.6;">{note}</div>
                 </div>
             """, unsafe_allow_html=True)
 
@@ -1591,8 +1806,9 @@ elif selected == PAGES[2]:
         st.info(f"Showing regional April 2020 drought baseline ({REFERENCE_SOIL_PCT}%)." +
                 (f" Reason: {smap['error']}" if smap and "error" in smap else ""))
 
-    crop = st.session_state["profile"].get("crop", "Corn")
-    st.markdown(f"#### Irrigation Directives for {crop}")
+    curr_c = st.session_state["profile"].get("current_crops", [st.session_state["profile"].get("crop", "Corn")])
+    crops_label = ", ".join(curr_c)
+    st.markdown(f"#### Irrigation Directives for {crops_label}")
     tips = {
         "red": ["Initiate deficit irrigation immediately. Schedule water delivery between 10:00 PM and 06:00 AM.",
                 "Prioritize moisture to reproductive nodes (flowering and grain-filling phases).",
@@ -1828,8 +2044,14 @@ elif selected == PAGES[5]:
 
     # --- Live Resend HTTP Email Dispatch Integration ---
     st.divider()
-    st.subheader("📧 Send Live Email Alert")
-    st.write("Transmit real-time satellite telemetry reports to farm operators via secure cloud HTTP API.")
+    st.markdown("""
+        <div class="glass-card">
+            <h4 style="margin-top:0; color:#38bdf8 !important;">📧 Live Email Alert Dispatcher (Resend API)</h4>
+            <div style="font-size:0.92rem; color:#cbd5e1; line-height:1.5;">
+                Transmit real-time satellite telemetry reports and multi-season crop status to operators via secure cloud HTTP API (bypassing SMTP port locks).
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 
     default_recipient = st.session_state["profile"].get("email") or "sarpsystems.test@gmail.com"
     target_email = st.text_input("Recipient Email Address:", value=default_recipient)
@@ -1847,25 +2069,39 @@ elif selected == PAGES[5]:
     # Preview of the Telemetry Report
     with st.expander("📄 View Telemetry Report Preview"):
         snap = get_field_snapshot()
-        crop_curr = st.session_state["profile"].get("crop", "Corn")
+        p = st.session_state["profile"]
+        curr_c = p.get("current_crops", [p.get("crop", "Corn")])
+        past_c = p.get("past_crops", [p.get("last_crop", "Soybeans")])
+        fut_c = p.get("future_crops", ["Winter Wheat"])
+        crops_str = ", ".join(curr_c)
+        past_str = ", ".join(past_c)
+        fut_str = ", ".join(fut_c)
         preview_text = f"""[FARMEDIA AGRO-SATELLITE INTELLIGENCE REPORT]
-Target Area : Weld County, Colorado (40.2827° N, -104.6872° W)
-Crop Sector : {crop_curr}
+Target Area  : Weld County, Colorado (40.2827° N, -104.6872° W)
+Planted Crops: {crops_str}
+Past Season  : {past_str}
+Next Season  : {fut_str}
 Soil Moisture: {snap['soil_pct']:.1f}% ({snap['soil_note']})
-Lowest Temp : {snap['min_temp']:.1f} °C
-Frost Nights: {snap['frost_nights']} recorded
-Rainfall    : {snap['rain_total']:.1f} mm
+Lowest Temp  : {snap['min_temp']:.1f} °C
+Frost Nights : {snap['frost_nights']} recorded
+Rainfall     : {snap['rain_total']:.1f} mm
 
 Directives:
 - Maintain nocturnal deficit irrigation window (10:00 PM – 06:00 AM).
 - Conserve root-zone moisture via residue retention.
 """
-        st.text_area("Telemetry Dispatch Body", value=preview_text, height=180, disabled=True)
+        st.text_area("Telemetry Dispatch Body", value=preview_text, height=195, disabled=True)
 
     # --- Domain-Guarded Sarp AI Dialogue ---
     st.divider()
-    st.subheader("🤖 Sarp AI Agronomic Assistant")
-    st.write("Sarp AI answers domain-specific questions on soils, crops, irrigation, and agro-meteorology.")
+    st.markdown("""
+        <div class="glass-card">
+            <h4 style="margin-top:0; color:#34d399 !important;">🤖 Sarp AI Agronomic Assistant</h4>
+            <div style="font-size:0.92rem; color:#cbd5e1; line-height:1.5;">
+                Domain-guarded intelligence assistant analyzing real-time satellite telemetry (NASA SMAP, MODIS, NSIDC) and your active multi-season crop portfolio.
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 
     quick_cols = st.columns(len(QUICK_PROMPTS))
     for col, (label, text) in zip(quick_cols, QUICK_PROMPTS.items()):
@@ -1887,8 +2123,14 @@ Directives:
             st.markdown(prompt)
 
         profile = st.session_state["profile"]
-        crop = profile.get("crop", "Corn")
-        last_crop = profile.get("last_crop", "Soybeans")
+        curr_c = profile.get("current_crops", [profile.get("crop", "Corn")])
+        past_c = profile.get("past_crops", [profile.get("last_crop", "Soybeans")])
+        fut_c = profile.get("future_crops", ["Winter Wheat"])
+        crop = curr_c[0] if curr_c else "Corn"
+        last_crop = past_c[0] if past_c else "Soybeans"
+        crops_str = ", ".join(curr_c)
+        past_str = ", ".join(past_c)
+        future_str = ", ".join(fut_c)
         snap = get_field_snapshot()
         soil_label = soil_status(snap["soil_pct"])[0]
 
@@ -1976,8 +2218,9 @@ Directives:
 
         data_context = f"""
         [CURRENT FIELD & SATELLITE TELEMETRY - WELD COUNTY, COLORADO]
-        - Target Crop: {crop}
-        - Preceding Crop Rotation: {last_crop}
+        - Currently Planted Field Crops (Active Season): {crops_str}
+        - Preceding Season Crop Rotation: {past_str}
+        - Planned Next Season Plantings: {future_str}
         - Location / AOI: Weld County, Colorado, USA (40.2827° N, -104.6872° W, ~1460 m ASL)
         - Baseline Benchmark: April 2020 Regional Drought Crisis
         - Root-Zone Soil Moisture (NASA SMAP 9km, top 5cm): {snap['soil_pct']:.1f}% ({soil_label}) [Critical water stress threshold: <15%]
