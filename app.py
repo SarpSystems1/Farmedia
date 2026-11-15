@@ -11,10 +11,9 @@ files = {
 }
 
 for filename, file_id in files.items():
-    if not os.path.exists(filename):
-        url = f"https://drive.google.com/uc?id={file_id}"
-        with st.spinner(f"{filename} Google Drive'dan indiriliyor..."):
-            gdown.download(url, filename, quiet=False)
+    url = f"https://drive.google.com/uc?id={file_id}"
+    with st.spinner(f"{filename} Google Drive'dan indiriliyor..."):
+        gdown.download(url, filename, quiet=False)
 # -------------------------------------
 import re
 import time
