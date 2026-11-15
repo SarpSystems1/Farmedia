@@ -1156,7 +1156,7 @@ def get_chart_data(chart_key: str) -> dict:
             return {
                 "df": df, "pie": pie, "calendar": get_temp_series("avg"),
                 "title": "🌦️ Daily Temperature and Precipitation Profile",
-                "note": "Pie breakdown represents weekly rainfall distribution."
+                "note": "Continuous line timeseries tracking daily average temperature (°C) alongside precipitation (mm)."
             }
 
         if w["min_col"] is None or w["min_col"] not in raw.columns:
@@ -1252,6 +1252,473 @@ def draw_calendar_heatmap(series: pd.Series, unit: str = "°C"):
         st.warning(f"Heatmap visualization fallback: {e}")
 
 
+def build_academic_soil_pie_html(soil_pct: float) -> str:
+    """Builds an animated, academic dark-glassmorphic donut visualization for soil volumetric moisture."""
+    matrix_pct = max(100.0 - soil_pct, 0.0)
+    c = 490.09  # 2 * pi * 78
+    clamped_soil = min(max(soil_pct, 0.0), 100.0)
+    offset = round(c * (1.0 - clamped_soil / 100.0), 2)
+
+    if soil_pct < 15:
+        status_label = "CRITICALLY DRY (&lt;15%)"
+        status_bg = "rgba(239, 68, 68, 0.2)"
+        status_color = "#fca5a5"
+        status_border = "rgba(239, 68, 68, 0.45)"
+    elif soil_pct < 25:
+        status_label = "DEFICIT ZONE (15–25%)"
+        status_bg = "rgba(245, 158, 11, 0.2)"
+        status_color = "#fcd34d"
+        status_border = "rgba(245, 158, 11, 0.45)"
+    elif soil_pct < 35:
+        status_label = "OPTIMAL MOISTURE (25–35%)"
+        status_bg = "rgba(16, 185, 129, 0.2)"
+        status_color = "#6ee7b7"
+        status_border = "rgba(16, 185, 129, 0.45)"
+    else:
+        status_label = "FIELD CAPACITY / SATURATED"
+        status_bg = "rgba(59, 130, 246, 0.2)"
+        status_color = "#93c5fd"
+        status_border = "rgba(59, 130, 246, 0.45)"
+
+    return f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  body {{
+    background: transparent;
+    color: #f1f5f9;
+    font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    padding: 4px;
+    overflow: hidden;
+  }}
+  .academic-card {{
+    background: rgba(15, 34, 30, 0.72);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 18px;
+    padding: 18px 22px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: center;
+    justify-content: space-around;
+  }}
+  .chart-col {{
+    position: relative;
+    width: 195px;
+    height: 195px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }}
+  svg {{
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }}
+  .bg-circle {{
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.06);
+    stroke-width: 20;
+  }}
+  .matrix-arc {{
+    fill: none;
+    stroke: rgba(24, 52, 45, 0.85);
+    stroke-width: 20;
+    stroke-dasharray: 490.09;
+    stroke-dashoffset: 0;
+  }}
+  .water-arc {{
+    fill: none;
+    stroke: url(#emeraldGrad);
+    stroke-width: 20;
+    stroke-linecap: round;
+    stroke-dasharray: 490.09;
+    stroke-dashoffset: {offset};
+    filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.6));
+    animation: drawArc 1.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }}
+  @keyframes drawArc {{
+    from {{ stroke-dashoffset: 490.09; }}
+    to {{ stroke-dashoffset: {offset}; }}
+  }}
+  .center-text {{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+  }}
+  .center-val {{
+    font-family: 'Outfit', sans-serif;
+    font-size: 29px;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.05;
+    text-shadow: 0 2px 8px rgba(16, 185, 129, 0.45);
+  }}
+  .center-lbl {{
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #a7f3d0;
+    margin-top: 1px;
+  }}
+  .center-status {{
+    display: inline-block;
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    margin-top: 4px;
+    background: {status_bg};
+    color: {status_color};
+    border: 1px solid {status_border};
+    white-space: nowrap;
+  }}
+  .legend-col {{
+    flex: 1 1 260px;
+    min-width: 240px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }}
+  .item-box {{
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+  }}
+  .item-box:hover {{
+    border-color: rgba(52, 211, 153, 0.35);
+    background: rgba(16, 185, 129, 0.07);
+    transform: translateX(2px);
+  }}
+  .item-info {{
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }}
+  .dot-water {{
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #10b981, #34d399);
+    box-shadow: 0 0 6px rgba(52, 211, 153, 0.5);
+  }}
+  .dot-matrix {{
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #1e3a34;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }}
+  .item-name {{
+    font-weight: 600;
+    font-size: 12px;
+    color: #f1f5f9;
+  }}
+  .item-sub {{
+    font-size: 10.5px;
+    color: #94a3b8;
+  }}
+  .item-val {{
+    font-family: 'Outfit', sans-serif;
+    font-size: 16.5px;
+    font-weight: 700;
+    color: #ffffff;
+  }}
+  .reference-strip {{
+    margin-top: 2px;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.1);
+    font-size: 11px;
+    color: #cbd5e1;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 4px;
+  }}
+  .ref-tag {{ color: #94a3b8; }}
+  .ref-val {{ font-weight: 600; color: #fcd34d; }}
+  .academic-footer {{
+    margin-top: 4px;
+    font-size: 10px;
+    color: #94a3b8;
+    text-align: right;
+  }}
+</style>
+</head>
+<body>
+<div class="academic-card">
+  <div class="chart-col">
+    <svg viewBox="0 0 200 200">
+      <defs>
+        <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#059669" />
+          <stop offset="50%" stop-color="#10b981" />
+          <stop offset="100%" stop-color="#34d399" />
+        </linearGradient>
+      </defs>
+      <circle class="bg-circle" cx="100" cy="100" r="78" />
+      <circle class="matrix-arc" cx="100" cy="100" r="78" />
+      <circle class="water-arc" cx="100" cy="100" r="78" />
+    </svg>
+    <div class="center-text">
+      <div class="center-val">{soil_pct:.1f}%</div>
+      <div class="center-lbl">Volumetric θv</div>
+      <div class="center-status">{status_label}</div>
+    </div>
+  </div>
+  <div class="legend-col">
+    <div class="item-box">
+      <div class="item-info">
+        <div class="dot-water"></div>
+        <div>
+          <div class="item-name">Volumetric Liquid Phase (θv)</div>
+          <div class="item-sub">Plant-Available Soil Water (Upper 5 cm)</div>
+        </div>
+      </div>
+      <div class="item-val" style="color:#6ee7b7;">{soil_pct:.1f}%</div>
+    </div>
+    <div class="item-box">
+      <div class="item-info">
+        <div class="dot-matrix"></div>
+        <div>
+          <div class="item-name">Mineral Soil & Air Pore Matrix</div>
+          <div class="item-sub">Solid Matrix Frame & Macropore Aeration</div>
+        </div>
+      </div>
+      <div class="item-val">{matrix_pct:.1f}%</div>
+    </div>
+    <div class="reference-strip">
+      <span><span class="ref-tag">Wilting Point:</span> <span class="ref-val">&lt; 15%</span></span>
+      <span><span class="ref-tag">Deficit:</span> <span class="ref-val">15–25%</span></span>
+      <span><span class="ref-tag">Field Capacity:</span> <span class="ref-val">25–35%</span></span>
+    </div>
+    <div class="academic-footer">
+      🛰️ NASA SMAP L3 (SPL3SMP_E) · Volumetric Water Content m³/m³
+    </div>
+  </div>
+</div>
+</body>
+</html>"""
+
+
+def build_academic_savings_bar_html() -> str:
+    """Builds an animated, academic dark-glassmorphic bar visualization for irrigation and tariff savings."""
+    return """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: transparent;
+    color: #f1f5f9;
+    font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    padding: 4px;
+    overflow: hidden;
+  }
+  .academic-bar-card {
+    background: rgba(15, 34, 30, 0.72);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 18px;
+    padding: 20px 24px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  }
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+    gap: 8px;
+  }
+  .title-txt {
+    font-family: 'Outfit', sans-serif;
+    font-size: 16.5px;
+    font-weight: 700;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .bench-badge {
+    background: rgba(52, 211, 153, 0.15);
+    border: 1px solid rgba(52, 211, 153, 0.4);
+    color: #6ee7b7;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+  .section-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94a3b8;
+    margin: 12px 0 6px;
+  }
+  .bar-row {
+    margin-bottom: 9px;
+  }
+  .bar-label-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12.5px;
+    margin-bottom: 3px;
+    color: #e2e8f0;
+  }
+  .bar-label-name {
+    font-weight: 500;
+  }
+  .bar-val-badge {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .bar-track {
+    width: 100%;
+    height: 16px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative;
+  }
+  .bar-fill-baseline {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, rgba(148, 163, 184, 0.3) 0%, rgba(148, 163, 184, 0.55) 100%);
+    border-radius: 999px;
+    animation: growBaseline 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .bar-fill-water {
+    height: 100%;
+    width: 80%;
+    background: linear-gradient(90deg, #059669 0%, #10b981 60%, #34d399 100%);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+    border-radius: 999px;
+    animation: growWater 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .bar-fill-power {
+    height: 100%;
+    width: 65%;
+    background: linear-gradient(90deg, #0284c7 0%, #0ea5e9 50%, #38bdf8 100%);
+    box-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+    border-radius: 999px;
+    animation: growPower 1.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  @keyframes growBaseline { from { width: 0%; } to { width: 100%; } }
+  @keyframes growWater { from { width: 0%; } to { width: 80%; } }
+  @keyframes growPower { from { width: 0%; } to { width: 65%; } }
+  .synergy-box {
+    margin-top: 14px;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+    border-radius: 12px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .synergy-txt {
+    font-size: 12px;
+    color: #e2e8f0;
+    line-height: 1.4;
+    flex: 1 1 200px;
+  }
+  .synergy-val {
+    font-family: 'Outfit', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: #34d399;
+    text-shadow: 0 2px 10px rgba(52, 211, 153, 0.4);
+    white-space: nowrap;
+  }
+  .citation-footer {
+    margin-top: 10px;
+    font-size: 10px;
+    color: #94a3b8;
+    line-height: 1.4;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 6px;
+  }
+</style>
+</head>
+<body>
+<div class="academic-bar-card">
+  <div class="header-row">
+    <div class="title-txt">📊 Resource Optimization & Operational Expenditure Model</div>
+    <span class="bench-badge">Nominal Baseline = 100 Index Points</span>
+  </div>
+
+  <div class="section-title">💧 1. Volumetric Irrigation Application Strategy</div>
+  <div class="bar-row">
+    <div class="bar-label-line">
+      <span class="bar-label-name">Standard Water Delivery (100% ETc Baseline)</span>
+      <span class="bar-val-badge" style="color: #94a3b8;">100.0 (Nominal Index)</span>
+    </div>
+    <div class="bar-track"><div class="bar-fill-baseline"></div></div>
+  </div>
+  <div class="bar-row">
+    <div class="bar-label-line">
+      <span class="bar-label-name">Regulated Deficit Irrigation (RDI −20% Volume)</span>
+      <span class="bar-val-badge" style="color: #34d399;">80.0 (−20.0% Pumping Volume)</span>
+    </div>
+    <div class="bar-track"><div class="bar-fill-water"></div></div>
+  </div>
+
+  <div class="section-title" style="margin-top: 10px;">⚡ 2. Grid Electrical Pumping Tariff Window</div>
+  <div class="bar-row">
+    <div class="bar-label-line">
+      <span class="bar-label-name">On-Peak Daytime Pumping Window</span>
+      <span class="bar-val-badge" style="color: #94a3b8;">100.0 (Nominal Tariff)</span>
+    </div>
+    <div class="bar-track"><div class="bar-fill-baseline"></div></div>
+  </div>
+  <div class="bar-row">
+    <div class="bar-label-line">
+      <span class="bar-label-name">Nocturnal Off-Peak Tariff Window (10:00 PM – 06:00 AM)</span>
+      <span class="bar-val-badge" style="color: #38bdf8;">65.0 (−35.0% Electrical Tariff)</span>
+    </div>
+    <div class="bar-track"><div class="bar-fill-power"></div></div>
+  </div>
+
+  <div class="synergy-box">
+    <div class="synergy-txt">
+      <b>Synergistic Conservation Outcome:</b> Pairing nocturnal scheduling with deficit delivery yields compounding energy and evaporation reduction.
+    </div>
+    <div class="synergy-val">~48% Net Savings</div>
+  </div>
+
+  <div class="citation-footer">
+    <i>Academic Reference: Colorado Front Range Time-of-Use Pumping Schedule & FAO-56 Regulated Deficit Irrigation Crop Water Stress Guidelines.</i>
+  </div>
+</div>
+</body>
+</html>"""
+
+
 def render_chart(chart_key: str, chart_type: str = "line"):
     """Renders data across requested charting types safely."""
     data = get_chart_data(chart_key)
@@ -1259,9 +1726,31 @@ def render_chart(chart_key: str, chart_type: str = "line"):
         st.info(data["error"])
         return
 
+    # Academic & Animated Visualizations for Soil Moisture (Pie) and Savings (Bar)
+    if chart_key == "soil" and chart_type == "pie":
+        snap = get_field_snapshot()
+        st.markdown(f"**{data['title']}**")
+        st.caption("Interactive academic donut visualization of volumetric liquid fraction vs solid soil matrix.")
+        components.html(build_academic_soil_pie_html(snap['soil_pct']), height=300)
+        return
+
+    if chart_key == "savings" and chart_type == "bar":
+        st.markdown(f"**{data['title']}**")
+        st.caption("Calibrated resource efficiency model comparing water conservation and off-peak energy scheduling.")
+        components.html(build_academic_savings_bar_html(), height=420)
+        return
+
     st.markdown(f"**{data['title']}**")
-    if data.get("note"):
-        st.caption(data["note"])
+    note = data.get("note")
+    if chart_key == "weather":
+        if chart_type in ("line", "area"):
+            note = "Continuous line timeseries tracking daily average temperature (°C) alongside precipitation (mm)."
+        elif chart_type == "bar":
+            note = "Bar chart comparing daily average temperature and rainfall totals."
+        elif chart_type == "pie":
+            note = "Pie breakdown representing weekly rainfall distribution."
+    if note:
+        st.caption(note)
     df = data["df"]
 
     if chart_type == "heatmap":
@@ -1993,26 +2482,7 @@ elif selected == PAGES[3]:
         except Exception as e:
             st.error(f"Satellite GeoTIFF rendering fallback: {e}")
 
-    # ECOSTRESS Thermal & Surface Stress Layers
-    st.divider()
-    st.subheader("🛰️ NASA ECOSTRESS Surface Thermal & Water Stress Layers")
-    eco_list = load_ecostress_files()
 
-    if eco_list:
-        selected_eco = st.selectbox(
-            "Select Agricultural Thermal & Evaporation Layer:",
-            eco_list,
-            format_func=format_friendly_eco_name,
-            help="High-resolution thermal infrared and evapotranspiration data from the International Space Station."
-        )
-        friendly_title = format_friendly_eco_name(selected_eco)
-        if selected_eco.lower().endswith((".png", ".jpg", ".jpeg")):
-            st.image(selected_eco, caption=f"NASA ECOSTRESS: {friendly_title}", use_container_width=True)
-            st.caption("Surface thermal footprints indicate zones experiencing elevated crop water transpiration.")
-        else:
-            st.info(f"Geospatial Raster Layer: **{friendly_title}** (Calibrated for Field Evaporative Stress).")
-    else:
-        st.info("ℹ️ Local ECOSTRESS thermal image files (`ECOv002*`) are currently being ingested. Displaying primary sensor feeds.")
 
 
 # ============================================================================
@@ -2126,31 +2596,7 @@ elif selected == PAGES[5]:
             else:
                 st.error(f"❌ Failed to send email: {result.get('error')}")
 
-    # Preview of the Telemetry Report
-    with st.expander("📄 View Telemetry Report Preview"):
-        snap = get_field_snapshot()
-        p = st.session_state["profile"]
-        curr_c = p.get("current_crops", [p.get("crop", "Corn")])
-        past_c = p.get("past_crops", [p.get("last_crop", "Soybeans")])
-        fut_c = p.get("future_crops", ["Winter Wheat"])
-        crops_str = ", ".join(curr_c)
-        past_str = ", ".join(past_c)
-        fut_str = ", ".join(fut_c)
-        preview_text = f"""[FARMEDIA AGRO-SATELLITE INTELLIGENCE REPORT]
-Target Area  : Weld County, Colorado (40.2827° N, -104.6872° W)
-Planted Crops: {crops_str}
-Past Season  : {past_str}
-Next Season  : {fut_str}
-Soil Moisture: {snap['soil_pct']:.1f}% ({snap['soil_note']})
-Lowest Temp  : {snap['min_temp']:.1f} °C
-Frost Nights : {snap['frost_nights']} recorded
-Rainfall     : {snap['rain_total']:.1f} mm
 
-Directives:
-- Maintain nocturnal deficit irrigation window (10:00 PM – 06:00 AM).
-- Conserve root-zone moisture via residue retention.
-"""
-        st.text_area("Telemetry Dispatch Body", value=preview_text, height=195, disabled=True)
 
     # --- Domain-Guarded Sarp AI Dialogue ---
     st.divider()
