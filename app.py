@@ -648,12 +648,13 @@ def ask_groq(system_prompt: str, history: list[dict], retries: int = 3) -> tuple
         client = Groq(api_key=api_key)
 
         # Prioritized production models for Groq (updated for current active lineup)
+        # Prioritized active production models for Groq (high reliability & speed)
         fallback_candidates = [
-            "openai/gpt-oss-20b",
-            "openai/gpt-oss-120b",
             "llama-3.3-70b-versatile",
-            "qwen/qwen3-32b",
+            "llama-3.1-8b-instant",
             "llama-3.1-70b-versatile",
+            "mixtral-8x7b-32768",
+            "gemma2-9b-it",
         ]
 
         # Dynamically query active models if available to avoid 404 deprecated model errors
@@ -1227,13 +1228,16 @@ def draw_calendar_heatmap(series: pd.Series, unit: str = "°C"):
 
         vmin, vmax = float(np.nanmin(grid)), float(np.nanmax(grid))
         norm = TwoSlopeNorm(vmin=vmin, vcenter=0.0, vmax=vmax) if vmin < 0 < vmax else None
-        fig, ax = plt.subplots(figsize=(7, max(2.8, 0.85 * rows)))
+        fig, ax = plt.subplots(figsize=(7.5, max(3.0, 0.9 * rows)), facecolor="#091815", dpi=160)
+        ax.set_facecolor("#0d221e")
         im = ax.imshow(grid, cmap="RdYlBu_r", norm=norm, aspect="auto")
         ax.set_xticks(range(7))
-        ax.set_xticklabels(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"])
+        ax.set_xticklabels(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], color="#cbd5e1", fontsize=9)
         ax.xaxis.tick_top()
         ax.set_yticks(range(rows))
-        ax.set_yticklabels([f"Week {i + 1}" for i in range(rows)])
+        ax.set_yticklabels([f"Week {i + 1}" for i in range(rows)], color="#cbd5e1", fontsize=9)
+        for spine in ax.spines.values():
+            spine.set_color((1.0, 1.0, 1.0, 0.15))
 
         for r in range(rows):
             for c in range(7):
@@ -1242,10 +1246,13 @@ def draw_calendar_heatmap(series: pd.Series, unit: str = "°C"):
                     continue
                 day = (first + pd.Timedelta(days=r * 7 + c - offset)).day
                 level = im.norm(v) if norm else 0.5
-                color = "white" if (level < 0.25 or level > 0.75) else "black"
-                ax.text(c, r, f"{day}\n{v:.0f}°", ha="center", va="center", fontsize=8, color=color)
+                color = "white" if (level < 0.25 or level > 0.75) else "#091815"
+                ax.text(c, r, f"{day}\n{v:.0f}°", ha="center", va="center", fontsize=8.5, color=color, fontweight="bold")
 
-        fig.colorbar(im, ax=ax, label=f"Surface Temperature ({unit})")
+        cbar = fig.colorbar(im, ax=ax, label=f"Surface Temperature ({unit})")
+        cbar.ax.yaxis.set_tick_params(color="#cbd5e1")
+        plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color="#cbd5e1")
+        cbar.set_label(f"Surface Temperature ({unit})", color="#f1f5f9", fontweight="bold")
         st.pyplot(fig)
         plt.close(fig)
     except Exception as e:
@@ -1719,8 +1726,192 @@ def build_academic_savings_bar_html() -> str:
 </html>"""
 
 
+def build_dark_weather_chart(df: pd.DataFrame, chart_type: str = "line"):
+    """Builds a high-DPI, dark-glassmorphic dual-axis weather visualization (Temperature + Rainfall)."""
+    if not MPL_AVAILABLE:
+        return None
+    try:
+        fig, ax1 = plt.subplots(figsize=(10, 4.3), facecolor="#091815", dpi=160)
+        ax1.set_facecolor("#0d221e")
+        ax1.grid(True, linestyle="--", alpha=0.14, color="#ffffff")
+        ax1.tick_params(colors="#cbd5e1", labelsize=9)
+        for spine in ax1.spines.values():
+            spine.set_color((1.0, 1.0, 1.0, 0.15))
+
+        days = [d.day if hasattr(d, "day") else (i + 1) for i, d in enumerate(df.index)]
+
+        if "Average Temp (°C)" in df.columns:
+            t_vals = df["Average Temp (°C)"].values
+            if chart_type == "area":
+                ax1.fill_between(days, t_vals, 0, color="#10b981", alpha=0.25, label="Ambient Thermal Zone")
+                ax1.plot(days, t_vals, color="#34d399", linewidth=2.0)
+            else:
+                ax1.plot(days, t_vals, color="#10b981", linewidth=2.4, marker="o", markersize=4, label="Daily Avg Temp (°C)")
+                ax1.fill_between(days, t_vals, 0, where=(t_vals >= 0), color="#10b981", alpha=0.08, interpolate=True)
+                ax1.fill_between(days, t_vals, 0, where=(t_vals < 0), color="#ef4444", alpha=0.18, interpolate=True)
+            ax1.axhline(0, color="#f87171", linestyle=":", alpha=0.75, linewidth=1.2, label="0°C Freezing Baseline")
+            ax1.set_ylabel("Daily Average Temp (°C)", color="#a7f3d0", fontsize=9.5, fontweight="bold")
+
+        ax1.set_xlabel("April 2020 (Observation Day)", color="#94a3b8", fontsize=9.5)
+        ax1.set_xticks(range(1, 31, 2))
+
+        # Secondary axis for rainfall
+        if "Rainfall (mm)" in df.columns:
+            ax2 = ax1.twinx()
+            pr_vals = df["Rainfall (mm)"].values
+            ax2.bar(days, pr_vals, color="#38bdf8", alpha=0.75, width=0.45, label="Precipitation (mm)")
+            ax2.set_ylabel("Precipitation (mm)", color="#7dd3fc", fontsize=9.5, fontweight="bold")
+            ax2.tick_params(colors="#7dd3fc", labelsize=9)
+            ax2.grid(False)
+            ax2.set_ylim(0, max(float(np.nanmax(pr_vals) * 2.5), 10.0))
+            for spine in ax2.spines.values():
+                spine.set_color((1.0, 1.0, 1.0, 0.15))
+
+        ax1.legend(facecolor="#091815", edgecolor=(1.0, 1.0, 1.0, 0.18), labelcolor="#f1f5f9", loc="upper left", fontsize=8.5)
+        plt.tight_layout()
+        return fig
+    except Exception:
+        return None
+
+
+def build_dark_frost_chart(df: pd.DataFrame):
+    """Builds an academic dark-glassmorphic frost assessment chart highlighting freeze risks."""
+    if not MPL_AVAILABLE:
+        return None
+    try:
+        col = [c for c in df.columns if "Lowest" in c or "T2M_MIN" in c]
+        if not col:
+            col = [df.columns[0]]
+        series = df[col[0]]
+        days = [d.day if hasattr(d, "day") else (i + 1) for i, d in enumerate(df.index)]
+        vals = series.values
+
+        fig, ax = plt.subplots(figsize=(10, 4.3), facecolor="#091815", dpi=160)
+        ax.set_facecolor("#0d221e")
+        ax.grid(True, linestyle="--", alpha=0.14, color="#ffffff")
+        ax.tick_params(colors="#cbd5e1", labelsize=9)
+        for spine in ax.spines.values():
+            spine.set_color((1.0, 1.0, 1.0, 0.15))
+
+        dot_colors = ["#f43f5e" if v < 0 else "#34d399" for v in vals]
+        ax.plot(days, vals, color="#94a3b8", linewidth=1.6, alpha=0.6, zorder=2)
+        ax.scatter(days, vals, c=dot_colors, s=46, zorder=3, edgecolors="white", linewidth=0.6)
+        ax.axhline(0, color="#f87171", linestyle="--", linewidth=1.8, label="0°C Freezing Threshold", zorder=1)
+        ax.fill_between(days, vals, 0, where=(vals < 0), color="#ef4444", alpha=0.20, interpolate=True, label="Sub-Zero Danger Zone")
+
+        # Annotate record freeze on April 15 (-10.8°C)
+        min_idx = int(np.argmin(vals))
+        min_day, min_val = days[min_idx], vals[min_idx]
+        ax.annotate(
+            f"April {min_day}: {min_val:.1f}°C\nRecord Hard Freeze",
+            xy=(min_day, min_val),
+            xytext=(min_day + 2.2, min_val + 3.2),
+            arrowprops=dict(facecolor="#f87171", edgecolor="white", arrowstyle="->", lw=1.2),
+            bbox=dict(boxstyle="round,pad=0.4", fc="#1f1214", ec="#f87171", lw=1.2),
+            color="#fca5a5", fontsize=8.5, fontweight="bold"
+        )
+
+        ax.set_ylabel("Overnight Minimum Temp (°C)", color="#fca5a5", fontsize=9.5, fontweight="bold")
+        ax.set_xlabel("April 2020 (Observation Day)", color="#94a3b8", fontsize=9.5)
+        ax.set_xticks(range(1, 31, 2))
+        ax.legend(facecolor="#091815", edgecolor=(1.0, 1.0, 1.0, 0.18), labelcolor="#f1f5f9", loc="upper right", fontsize=8.5)
+        plt.tight_layout()
+        return fig
+    except Exception:
+        return None
+
+
+def build_dark_ndvi_chart(df: pd.DataFrame, chart_type: str = "line"):
+    """Builds a high-DPI dark-glassmorphic MODIS NDVI & EVI phenology trajectory."""
+    if not MPL_AVAILABLE:
+        return None
+    try:
+        days = list(df.index)
+        ndvi = df["NDVI (Canopy Vigor)"].values
+        evi = df["EVI (Enhanced Index)"].values
+
+        fig, ax = plt.subplots(figsize=(10, 4.3), facecolor="#091815", dpi=160)
+        ax.set_facecolor("#0d221e")
+        ax.grid(True, linestyle="--", alpha=0.14, color="#ffffff")
+        ax.tick_params(colors="#cbd5e1", labelsize=9)
+        for spine in ax.spines.values():
+            spine.set_color((1.0, 1.0, 1.0, 0.15))
+
+        if chart_type == "bar":
+            w = 1.8
+            ax.bar([d - w/2 for d in days], ndvi, width=w, color="#10b981", alpha=0.85, label="NDVI (Canopy Vigor)")
+            ax.bar([d + w/2 for d in days], evi, width=w, color="#f59e0b", alpha=0.85, label="EVI (Enhanced Index)")
+        elif chart_type == "area":
+            ax.fill_between(days, ndvi, 0, color="#10b981", alpha=0.35, label="NDVI Canopy Area")
+            ax.plot(days, ndvi, color="#34d399", linewidth=2.4)
+            ax.plot(days, evi, color="#f59e0b", linewidth=2.0, linestyle="--", label="EVI Trajectory")
+        else:
+            ax.plot(days, ndvi, color="#10b981", linewidth=2.4, marker="o", markersize=6, label="NDVI (Canopy Vigor)")
+            ax.fill_between(days, ndvi, 0, color="#10b981", alpha=0.12)
+            ax.plot(days, evi, color="#f59e0b", linewidth=2.2, marker="s", markersize=5, linestyle="--", label="EVI (Enhanced Index)")
+
+        ax.axhline(0.30, color="#6ee7b7", linestyle=":", alpha=0.7, linewidth=1.4, label="Drought Emergence Benchmark (0.30)")
+
+        # Annotate nadir dip on Day 16
+        if 16 in days:
+            ax.annotate(
+                "Day 16 Nadir: 0.28\nFreeze & Moisture Stress",
+                xy=(16, 0.28),
+                xytext=(18.5, 0.235),
+                arrowprops=dict(facecolor="#f59e0b", edgecolor="white", arrowstyle="->", lw=1.2),
+                bbox=dict(boxstyle="round,pad=0.4", fc="#1e1810", ec="#f59e0b", lw=1.2),
+                color="#fde68a", fontsize=8.5, fontweight="bold"
+            )
+
+        ax.set_ylabel("Vegetation Index Value", color="#a7f3d0", fontsize=9.5, fontweight="bold")
+        ax.set_xlabel("April 2020 Observation Day", color="#94a3b8", fontsize=9.5)
+        ax.set_xticks(days)
+        ax.set_xticklabels([f"Day {d}" for d in days])
+        ax.set_ylim(0.12, 0.40)
+        ax.legend(facecolor="#091815", edgecolor=(1.0, 1.0, 1.0, 0.18), labelcolor="#f1f5f9", loc="upper right", fontsize=8.5)
+        plt.tight_layout()
+        return fig
+    except Exception:
+        return None
+
+
+def build_dark_soil_bar_chart(df: pd.DataFrame):
+    """Builds a dark-glassmorphic soil moisture bar comparison across field sectors."""
+    if not MPL_AVAILABLE:
+        return None
+    try:
+        fig, ax = plt.subplots(figsize=(10, 4.2), facecolor="#091815", dpi=160)
+        ax.set_facecolor("#0d221e")
+        ax.grid(True, linestyle="--", alpha=0.14, color="#ffffff")
+        ax.tick_params(colors="#cbd5e1", labelsize=9)
+        for spine in ax.spines.values():
+            spine.set_color((1.0, 1.0, 1.0, 0.15))
+
+        categories = list(df.index)
+        values = df["Soil Moisture (%)"].values
+        colors = ["#f87171" if v < 12 else ("#f59e0b" if v < 18 else "#10b981") for v in values]
+
+        bars = ax.bar(categories, values, color=colors, width=0.45, edgecolor="white", linewidth=0.6, alpha=0.9)
+        ax.axhline(15.0, color="#ef4444", linestyle="--", linewidth=1.6, label="Critical Water Stress Threshold (15%)")
+
+        for bar in bars:
+            h = bar.get_height()
+            ax.annotate(f"{h:.1f}%",
+                        xy=(bar.get_x() + bar.get_width() / 2, h),
+                        xytext=(0, 4), textcoords="offset points",
+                        ha="center", va="bottom", color="#ffffff", fontweight="bold", fontsize=9.5)
+
+        ax.set_ylabel("Volumetric Soil Moisture (%)", color="#a7f3d0", fontsize=9.5, fontweight="bold")
+        ax.set_ylim(0, max(float(np.nanmax(values)) + 6.0, 26.0))
+        ax.legend(facecolor="#091815", edgecolor=(1.0, 1.0, 1.0, 0.18), labelcolor="#f1f5f9", loc="upper right", fontsize=8.5)
+        plt.tight_layout()
+        return fig
+    except Exception:
+        return None
+
+
 def render_chart(chart_key: str, chart_type: str = "line"):
-    """Renders data across requested charting types safely."""
+    """Renders data across requested charting types safely with custom dark glassmorphic styling."""
     data = get_chart_data(chart_key)
     if "error" in data:
         st.info(data["error"])
@@ -1760,6 +1951,24 @@ def render_chart(chart_key: str, chart_type: str = "line"):
             return
         chart_type = "bar"
 
+    # Premium dark-glassmorphic Matplotlib visualizations
+    if MPL_AVAILABLE:
+        fig = None
+        if chart_key == "weather":
+            fig = build_dark_weather_chart(df, chart_type)
+        elif chart_key == "frost":
+            fig = build_dark_frost_chart(df)
+        elif chart_key == "ndvi":
+            fig = build_dark_ndvi_chart(df, chart_type)
+        elif chart_key == "soil" and chart_type == "bar":
+            fig = build_dark_soil_bar_chart(df)
+
+        if fig is not None:
+            st.pyplot(fig)
+            plt.close(fig)
+            return
+
+    # Standard fallback if Matplotlib is unavailable or fails
     if chart_type == "bar":
         st.bar_chart(df)
     elif chart_type == "area":
@@ -1773,9 +1982,11 @@ def render_chart(chart_key: str, chart_type: str = "line"):
         if pie.empty:
             st.info("No positive values available for proportional pie visualization.")
             return
-        fig, ax = plt.subplots(figsize=(6, 6))
+        fig, ax = plt.subplots(figsize=(6, 6), facecolor="#091815")
+        ax.set_facecolor("#0d221e")
         colors = plt.cm.Greens(np.linspace(0.3, 0.75, len(pie)))
-        ax.pie(pie.values, labels=[str(i) for i in pie.index], autopct="%1.1f%%", startangle=90, colors=colors)
+        ax.pie(pie.values, labels=[str(i) for i in pie.index], autopct="%1.1f%%", startangle=90, colors=colors,
+               textprops={'color': '#f1f5f9'})
         ax.axis("equal")
         st.pyplot(fig)
         plt.close(fig)
@@ -1831,17 +2042,23 @@ def build_freeze_thaw_map(tif_path: str):
             data = src.read(1, out_shape=(src.height // factor, src.width // factor), masked=True)
 
     cmap = plt.get_cmap("RdYlBu_r").copy()
-    cmap.set_bad("lightgrey")
-    fig, ax = plt.subplots(figsize=(7, 5))
+    cmap.set_bad("#1e293b")
+    fig, ax = plt.subplots(figsize=(7.5, 5), facecolor="#091815", dpi=160)
+    ax.set_facecolor("#0a1c18")
+    for spine in ax.spines.values():
+        spine.set_color((1.0, 1.0, 1.0, 0.15))
     im = ax.imshow(data, cmap=cmap, extent=extent, interpolation="nearest")
     if marker:
-        ax.plot(marker[0], marker[1], marker="*", color="black", markersize=18, markeredgecolor="white")
+        ax.plot(marker[0], marker[1], marker="*", color="#fbbf24", markersize=18, markeredgecolor="white", markeredgewidth=1.2)
         ax.annotate("Weld County AOI", marker, textcoords="offset points", xytext=(10, 10),
-                    fontweight="bold", bbox=dict(boxstyle="round", fc="white", alpha=0.85))
+                    fontweight="bold", color="#ffffff", bbox=dict(boxstyle="round,pad=0.35", fc="#0d221e", ec="#34d399", lw=1.2))
     ax.set_xticks([])
     ax.set_yticks([])
-    ax.set_title("NSIDC Satellite Surface Freeze/Thaw State")
-    fig.colorbar(im, ax=ax, label="Surface Thermal State Index")
+    ax.set_title("NSIDC Satellite Surface Freeze/Thaw State", color="#ffffff", fontsize=11, fontweight="bold", pad=10)
+    cbar = fig.colorbar(im, ax=ax, label="Surface Thermal State Index")
+    cbar.ax.yaxis.set_tick_params(color="#cbd5e1")
+    plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color="#cbd5e1")
+    cbar.set_label("Surface Thermal State Index", color="#f1f5f9", fontweight="bold")
 
     info = {
         "weld_value": weld_value,
@@ -2420,7 +2637,7 @@ elif selected == PAGES[3]:
             st.markdown("""
                 <div class="glass-card-rose" style="margin-top:14px;">
                     <h5 style="margin-top:0; color:#f87171 !important;">⚠️ Frost Warning Active: Sub-zero temperatures detected</h5>
-                    <div style="font-size:0.9rem;">Protect young emerge seedlings and postpone cold-sensitive seeding cycles.</div>
+                    <div style="font-size:0.9rem;">Protect young emerging seedlings and postpone cold-sensitive seeding cycles.</div>
                 </div>
             """, unsafe_allow_html=True)
         else:
@@ -2429,6 +2646,8 @@ elif selected == PAGES[3]:
                     <h5 style="margin-top:0; color:#34d399 !important;">✅ No freezing temperatures recorded during this observation cycle</h5>
                 </div>
             """, unsafe_allow_html=True)
+
+        render_chart("frost", "line")
 
     # High-Priority Feature: Display OpenET Satellite Raster PNG from Google Drive
     st.markdown("#### 🛰️ OpenET / Evapotranspiration & Cryospheric Temperature Raster")
@@ -2604,7 +2823,7 @@ elif selected == PAGES[5]:
         <div class="glass-card">
             <h4 style="margin-top:0; color:#34d399 !important;">🤖 Sarp AI Agronomic Assistant</h4>
             <div style="font-size:0.92rem; color:#cbd5e1; line-height:1.5;">
-                Domain-guarded intelligence assistant analyzing real-time satellite telemetry (NASA SMAP, MODIS, NSIDC) and your active multi-season crop portfolio.
+                Domain-guarded intelligence assistant analyzing real-time satellite telemetry (NASA SMAP, MODIS, NSIDC, OpenET) and your active multi-season crop portfolio.
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -2632,15 +2851,13 @@ elif selected == PAGES[5]:
         curr_c = profile.get("current_crops", [profile.get("crop", "Corn")])
         past_c = profile.get("past_crops", [profile.get("last_crop", "Soybeans")])
         fut_c = profile.get("future_crops", ["Winter Wheat"])
-        crop = curr_c[0] if curr_c else "Corn"
-        last_crop = past_c[0] if past_c else "Soybeans"
         crops_str = ", ".join(curr_c)
         past_str = ", ".join(past_c)
         future_str = ", ".join(fut_c)
         snap = get_field_snapshot()
         soil_label = soil_status(snap["soil_pct"])[0]
 
-        # Specific Date or Date-Range Lookup from NASA POWER Telemetry
+        # Robust Date, Range & Domain Intent Extraction from NASA POWER Telemetry
         specific_date_data = ""
         daily_log_summary = ""
         df_csv, _ = load_nasa_power_csv()
@@ -2650,7 +2867,7 @@ elif selected == PAGES[5]:
                 df_csv = w_fallback["df"]
 
         if df_csv is not None and "DATE" in df_csv.columns:
-            prompt_lower = prompt.lower()
+            prompt_lower = prompt.lower().strip()
             dates_as_str = df_csv["DATE"].astype(str).str.slice(0, 10)
 
             # Build full 30-day verified April 2020 daily weather log
@@ -2665,74 +2882,120 @@ elif selected == PAGES[5]:
                 log_lines.append(f"{d_s}: Avg {t_a:.1f}°C | Min Low {t_l:.1f}°C ({stat}) | Max High {t_h:.1f}°C | Rain/Snow {p_r:.1f}mm")
             daily_log_summary = "\n".join(log_lines)
 
-            # 1. Check for Date Range (e.g. 10-15 nisan, 12 to 16 april, 10 ile 16 nisan arası, 10..15 nisan)
-            range_match = re.search(
-                r"(?:between\s+|from\s+)?(?:(?:april|nisan)[a-zA-Z]*\s*)?(\d{1,2})\s*(?:st|nd|rd|th)?(?:\s*(?:of\s+)?(?:april|nisan)[a-zA-Z]*)?\s*(?:-|–|to|and|ile|ila|veya|ve|\.\.)\s*(?:(?:april|nisan)[a-zA-Z]*\s*)?(\d{1,2})\s*(?:st|nd|rd|th)?(?:\s*(?:of\s+)?(?:april|nisan)[a-zA-Z]*)?",
-                prompt_lower
-            )
+            # 0. Check for ISO or explicit numeric date format (e.g. 2020-04-15, 15.04.2020, 15/04/2020)
+            iso_match = re.search(r"\b2020-04-(\d{1,2})\b|\b(\d{1,2})[./]0?4(?:[./]2020)?\b", prompt_lower)
+            extracted_iso_day = None
+            if iso_match:
+                val = iso_match.group(1) or iso_match.group(2)
+                if val and 1 <= int(val) <= 30:
+                    extracted_iso_day = int(val)
 
-            # 2. Check for Single Date (e.g. 15 nisan, 15 nisandaki, april 15, 15th of april, day 15, 15 nisan 2020)
-            single_match = re.search(
-                r"\b(\d{1,2})(?:st|nd|rd|th)?\s*(?:of\s+)?(?:april|nisan)[a-zA-Z]*|\b(?:april|nisan)[a-zA-Z]*\s*(\d{1,2})(?:st|nd|rd|th)?\b|\b2020-04-(\d{2})\b|\bday\s+(\d{1,2})\b",
-                prompt_lower
-            )
+            # 1. Check for Date Range (e.g. 10-15 nisan, 10 ile 16 nisan arası, 12 to 16 april, between 10 and 15 april, 10..15)
+            range_match = None
+            if not extracted_iso_day:
+                range_match = re.search(
+                    r"(?:between\s+|from\s+)?(?:(?:april|nisan)[a-zA-Z]*\s*)?(?<!\d{4}-)(\b\d{1,2})\s*(?:st|nd|rd|th)?(?:\s*(?:of\s+)?(?:april|nisan)[a-zA-Z]*)?\s*(?:-|–|—|to|and|ile|ila|veya|ve|\.\.)\s*(?:(?:april|nisan)[a-zA-Z]*\s*)?(\b\d{1,2})\s*(?:st|nd|rd|th)?(?:\s*(?:of\s+)?(?:april|nisan)[a-zA-Z]*)?",
+                    prompt_lower
+                )
+
+            # 2. Check for Single Date in natural language (e.g. 15 nisan, 15 nisandaki, 15'inde, april 15, day 15, 15. gün)
+            single_match = None
+            if not extracted_iso_day and not range_match:
+                single_match = re.search(
+                    r"\b(\d{1,2})(?:st|nd|rd|th)?\s*(?:of\s+)?(?:april|nisan)[a-zA-Z]*|\b(?:april|nisan)[a-zA-Z]*\s*(\d{1,2})(?:st|nd|rd|th)?\b|\bday\s+(\d{1,2})\b|\b(\d{1,2})\.?\s*gün\b|\b(\d{1,2})\s*(?:'|’)?(?:inde|ine|i|in|inci|üncü)\b",
+                    prompt_lower
+                )
 
             if range_match:
-                d1, d2 = int(range_match.group(1)), int(range_match.group(2))
-                if 1 <= d1 <= 30 and 1 <= d2 <= 30:
-                    start_day, end_day = min(d1, d2), max(d1, d2)
-                    target_dates = [f"2020-04-{d:02d}" for d in range(start_day, end_day + 1)]
-                    range_rows = df_csv[dates_as_str.isin(target_dates)]
-                    if not range_rows.empty:
-                        lines = [f"\n[EXACT DAY-BY-DAY TELEMETRY FOR REQUESTED RANGE: April {start_day:02d} to April {end_day:02d}, 2020]:"]
-                        for _, r in range_rows.iterrows():
-                            d_val = str(r["DATE"])[:10]
-                            t_avg = r.get("T2M", 0.0)
-                            t_min = r.get("T2M_MIN", 0.0)
-                            t_max = r.get("T2M_MAX", 0.0)
-                            pr = r.get("PRECTOTCORR", 0.0)
-                            f_note = "HARD FREEZE (< -5°C)" if t_min <= -5.0 else ("FROST (< 0°C)" if t_min < 0.0 else "Frost-Free")
-                            lines.append(f"- {d_val}: Daily Avg {t_avg:.1f}°C | Night Min Low {t_min:.1f}°C ({f_note}) | Daytime Max High {t_max:.1f}°C | Rain/Snow {pr:.1f}mm")
-                        specific_date_data = "\n".join(lines) + "\nCRITICAL INSTRUCTION: The user asked for a date range. You MUST cite this exact day-by-day sequence. Do NOT give monthly averages.\n"
+                try:
+                    d1, d2 = int(range_match.group(1)), int(range_match.group(2))
+                    if 1 <= d1 <= 30 and 1 <= d2 <= 30 and d1 != d2:
+                        start_day, end_day = min(d1, d2), max(d1, d2)
+                        target_dates = [f"2020-04-{d:02d}" for d in range(start_day, end_day + 1)]
+                        range_rows = df_csv[dates_as_str.isin(target_dates)]
+                        if not range_rows.empty:
+                            lines = [f"\n[EXACT DAY-BY-DAY SATELLITE TELEMETRY FOR REQUESTED RANGE: April {start_day:02d} to April {end_day:02d}, 2020]:"]
+                            for _, r in range_rows.iterrows():
+                                d_val = str(r["DATE"])[:10]
+                                t_avg = r.get("T2M", 0.0)
+                                t_min = r.get("T2M_MIN", 0.0)
+                                t_max = r.get("T2M_MAX", 0.0)
+                                pr = r.get("PRECTOTCORR", 0.0)
+                                f_note = "HARD FREEZE (< -5°C)" if t_min <= -5.0 else ("FROST (< 0°C)" if t_min < 0.0 else "Frost-Free")
+                                lines.append(f"- {d_val}: Daily Avg {t_avg:.1f}°C | Night Min Low {t_min:.1f}°C ({f_note}) | Daytime Max High {t_max:.1f}°C | Rain/Snow {pr:.1f}mm")
+                            specific_date_data = "\n".join(lines) + f"\nCRITICAL INSTRUCTION: The user asked for a date range (April {start_day} to {end_day}). You MUST cite this exact day-by-day progression. DO NOT report the monthly average!\n"
+                except Exception:
+                    pass
 
-            elif single_match:
-                extracted = next(g for g in single_match.groups() if g is not None)
-                day_val = int(extracted)
-                if 1 <= day_val <= 30:
-                    target_date_str = f"2020-04-{day_val:02d}"
-                    target_row = df_csv[dates_as_str == target_date_str]
-                    if not target_row.empty:
-                        r = target_row.iloc[0]
-                        t_avg = r.get("T2M", 0.0)
-                        t_min = r.get("T2M_MIN", 0.0)
-                        t_max = r.get("T2M_MAX", 0.0)
-                        pr = r.get("PRECTOTCORR", 0.0)
-                        f_note = "CRITICAL HARD FREEZE NIGHT (< -5°C)" if t_min <= -5.0 else ("SUB-ZERO FROST (< 0°C)" if t_min < 0.0 else "Frost-Free Night")
-                        adverse = "Severe Arctic Cold Snap / Record Hard Freeze with high risk of cold injury to emerging seedling shoots." if t_min <= -5.0 else ("Sub-zero freeze hazard." if t_min < 0 else "Normal early-spring conditions.")
-                        specific_date_data = (
-                            f"\n[EXACT TELEMETRY FOR REQUESTED DATE ({target_date_str})]:\n"
-                            f"- Exact Date: {target_date_str} (April {day_val}, 2020)\n"
-                            f"- Daily Average Temperature (T2M): {t_avg:.1f} °C\n"
-                            f"- Minimum Overnight Low (T2M_MIN): {t_min:.1f} °C ({f_note})\n"
-                            f"- Maximum Daytime High (T2M_MAX): {t_max:.1f} °C\n"
-                            f"- Precipitation Total: {pr:.1f} mm\n"
-                            f"- Weather Characterization: {adverse}\n"
-                            f"CRITICAL INSTRUCTION: The user is specifically asking about {target_date_str}. "
-                            f"You MUST cite these EXACT numbers (Min: {t_min:.1f}°C, Max: {t_max:.1f}°C, Avg: {t_avg:.1f}°C). "
-                            f"DO NOT report the monthly average temperature!\n"
-                        )
+            target_single_day = extracted_iso_day
+            if not target_single_day and single_match:
+                extracted = next((g for g in single_match.groups() if g is not None), None)
+                if extracted:
+                    try:
+                        day_val = int(extracted)
+                        if 1 <= day_val <= 30:
+                            target_single_day = day_val
+                    except ValueError:
+                        pass
+
+            if target_single_day and not specific_date_data:
+                target_date_str = f"2020-04-{target_single_day:02d}"
+                target_row = df_csv[dates_as_str == target_date_str]
+                if not target_row.empty:
+                    r = target_row.iloc[0]
+                    t_avg = r.get("T2M", 0.0)
+                    t_min = r.get("T2M_MIN", 0.0)
+                    t_max = r.get("T2M_MAX", 0.0)
+                    pr = r.get("PRECTOTCORR", 0.0)
+                    f_note = "CRITICAL HARD FREEZE NIGHT (< -5°C)" if t_min <= -5.0 else ("SUB-ZERO FROST (< 0°C)" if t_min < 0.0 else "Frost-Free Night")
+                    adverse = "Severe Arctic Cold Snap / Record Hard Freeze with high risk of cold injury to emerging seedling shoots." if t_min <= -5.0 else ("Sub-zero freeze hazard." if t_min < 0 else "Normal early-spring conditions.")
+                    specific_date_data = (
+                        f"\n[EXACT SATELLITE & WEATHER TELEMETRY FOR REQUESTED DATE ({target_date_str})]:\n"
+                        f"- Exact Date: {target_date_str} (April {target_single_day}, 2020)\n"
+                        f"- Daily Average Temperature (T2M): {t_avg:.1f} °C\n"
+                        f"- Minimum Overnight Low (T2M_MIN): {t_min:.1f} °C ({f_note})\n"
+                        f"- Maximum Daytime High (T2M_MAX): {t_max:.1f} °C\n"
+                        f"- Precipitation Total: {pr:.1f} mm\n"
+                        f"- Telemetry Agronomic Characterization: {adverse}\n"
+                        f"CRITICAL INSTRUCTION: The user is specifically asking about {target_date_str} (or April {target_single_day}). "
+                        f"You MUST cite these EXACT daily numbers (Overnight Low: {t_min:.1f}°C, Daytime High: {t_max:.1f}°C, Daily Avg: {t_avg:.1f}°C, Rain: {pr:.1f}mm). "
+                        f"UNDER NO CIRCUMSTANCES should you report the monthly average temperature (8.9°C)!\n"
+                    )
 
         data_context = f"""
-        [CURRENT FIELD & SATELLITE TELEMETRY - WELD COUNTY, COLORADO]
+        [FIELD PORTFOLIO & TELEMETRY GROUNDING - WELD COUNTY, COLORADO]
+        - AOI Location: Weld County, Colorado, USA (40.2827° N, -104.6872° W, ~1460 m ASL)
+        - Historical Benchmark: April 2020 Regional Drought Crisis
         - Currently Planted Field Crops (Active Season): {crops_str}
         - Preceding Season Crop Rotation: {past_str}
         - Planned Next Season Plantings: {future_str}
-        - Location / AOI: Weld County, Colorado, USA (40.2827° N, -104.6872° W, ~1460 m ASL)
-        - Baseline Benchmark: April 2020 Regional Drought Crisis
-        - Root-Zone Soil Moisture (NASA SMAP 9km, top 5cm): {snap['soil_pct']:.1f}% ({soil_label}) [Critical water stress threshold: <15%]
-        - Plant Canopy Vigor (MODIS NDVI): 0.28 to 0.32 (Stunted/early emergence, delayed green-up)
-        - Monthly Summary: Lowest Temp {snap['min_temp']:.1f} °C, Frost Nights: {snap['frost_nights']}, Month Avg: {snap['avg_temp']:.1f} °C, Total Rain: {snap['rain_total']:.1f} mm
-        - Recommended Pumping & Tariff Strategy: Nocturnal deficit irrigation (10:00 PM – 06:00 AM off-peak window) yielding ~35% electricity tariff savings and curbing daytime evaporative losses.
+
+        [INTEGRATED SATELLITE OBSERVATION PIPELINES]:
+        1. NASA SMAP L3 Enhanced Radiometer (SPL3SMP_E - 9km, top 5cm):
+           - Measured Volumetric Soil Moisture (θv): {snap['soil_pct']:.1f}% ({soil_label})
+           - Critical Wilting Point / Deficit Threshold: <15.0%
+           - Field Sector Range: 8.4% (driest unmanaged sectors) to 21.6% (alluvial irrigated sectors)
+        2. NASA MODIS Vegetation Health (MOD13Q1 - 250m 16-Day Composites):
+           - NDVI Progression: Day 1: 0.32, Day 8: 0.30, Day 16: 0.28 (stress nadir dip), Day 24: 0.31, Day 30: 0.29
+           - EVI Range: 0.19 to 0.22 (Reflects delayed emergence and cold-stunted shoot development)
+        3. NSIDC-0771 Cryospheric Freeze/Thaw State (Microwave Radiometer):
+           - Surface Phase: Frozen topsoil state (Index=1) during mid-April Arctic Cold Surge
+           - Thawed Active Topsoil (Index=0) restored by April 18–20, reopening field operations
+        4. OpenET Ensemble Evapotranspiration Telemetry:
+           - Actual Evapotranspiration (ETa): ~2.1 mm/day average
+           - Atmospheric Reference Demand (ET0): ~4.8 mm/day
+           - Net Vapor Pressure Deficit: ~2.7 mm/day cumulative moisture extraction
+        5. ECOSTRESS (ECOv002) Thermal Surface Stress:
+           - Mid-afternoon Land Surface Temperatures (LST) peaked at 32°C to 36°C on exposed soil surfaces
+        6. NASA POWER Daily Surface Meteorology Summary:
+           - Month Average Temp: {snap['avg_temp']:.1f} °C
+           - Lowest Recorded Night: {snap['min_temp']:.1f} °C
+           - Sub-Zero Frost Nights (<0°C): {snap['frost_nights']}
+           - Total Cumulative Precipitation: {snap['rain_total']:.1f} mm
+        7. Resource Economics & Tariff Management Strategy:
+           - Controlled 20% deficit irrigation scheduling
+           - Nocturnal pumping window (10:00 PM – 06:00 AM) securing ~35% off-peak electricity discount
+           - Compounding synergy delivers ~48% net operational cost and water savings
 
         {specific_date_data}
 
@@ -2742,30 +3005,45 @@ elif selected == PAGES[5]:
 
         # Strict Domain Guardrail System Prompt
         system_prompt = f"""
-        You are Sarp AI, the dedicated Agricultural Decision Support System assistant for Weld County, Colorado.
-        Telemetry Context:
+        You are Sarp AI, the dedicated Agricultural Decision Support System assistant for Weld County, Colorado (NASA Space Apps Challenge).
+        
+        TELEMETRY CONTEXT:
         {data_context}
 
-        STRICT BEHAVIORAL RULES:
-        1. DOMAIN RESTRICTION: You answer ONLY questions related to agriculture, agronomy, crops, soil science, 
-           farming weather impacts, irrigation scheduling, plant pathology, agricultural resource economics, 
-           and farm telemetry queries (including specific date observations).
-           IF THE USER ASKS ABOUT ANY TOPIC OUTSIDE AGRICULTURE (such as politics, entertainment, coding unrelated 
-           to farming, gaming, sports, general history, etc.), YOU MUST POLITELY APOLOGIZE AND REFUSE IN ENGLISH:
-           "I apologize, but as a specialized agro-satellite assistant, I am designed to assist exclusively with 
-           agriculture, agronomy, crop management, soil moisture, and farming-related weather intelligence. 
-           Please feel free to ask any question regarding your fields, crops, or irrigation management."
-        2. CRITICAL ACCURACY DIRECTIVE FOR DATES & DATE RANGES:
+        STRICT BEHAVIORAL DIRECTIVES:
+        1. DOMAIN RESTRICTION: You answer ONLY questions related to agriculture, agronomy, crop management, soil science, 
+           farm weather impacts, irrigation scheduling, satellite observation data, plant pathology, and agricultural resource economics.
+           IF THE USER ASKS ABOUT ANY NON-AGRICULTURAL TOPIC (politics, gaming, sports, coding unrelated to farming, celebrities, etc.),
+           YOU MUST POLITELY DECLINE in the user's language:
+           - In English: "I apologize, but as a specialized agro-satellite assistant, I am designed to assist exclusively with agriculture, agronomy, crop management, soil moisture, and farming-related weather intelligence. Please feel free to ask any question regarding your fields, crops, or irrigation management."
+           - In Turkish: "Özür dilerim, ancak uzmanlaşmış bir tarımsal uydu karar destek asistanı olarak yalnızca tarım, agronomi, ürün yönetimi, toprak nemi ve tarımsal meteoroloji konularında yardımcı olmak üzere tasarlandım. Tarlanız, ürünleriniz veya sulama planınızla ilgili her türlü soruyu memnuniyetle yanıtlayabilirim."
+        2. CRITICAL ACCURACY FOR DATES & DATE RANGES:
            - When asked about a specific date (e.g. April 15 / 15 Nisan, April 13 / 13 Nisan) or a date range (e.g. April 10-15 / 10-15 Nisan):
              NEVER report the monthly average!
-             You MUST cite the EXACT recorded daily temperature (Minimum overnight low, Maximum daytime high, Daily average) 
-             and precipitation for that specific day or each day in the requested range from the table.
-           - For example, for April 15, 2020: Report the severe Hard Freeze event where temperatures plunged to a record low of -10.8 °C 
-             (Avg -2.1 °C, Max 5.6 °C), and explain the agronomic frost injury hazard to emerging crop shoots.
+             You MUST cite the EXACT recorded daily telemetry numbers (Overnight Minimum, Daytime Maximum, Daily Average) 
+             and precipitation for that specific day or each day in the requested range from the verified table above.
+           - For example, for April 15, 2020: Report the severe Hard Freeze event where temperatures plunged to a record overnight low of -10.8 °C 
+             (Daily Avg -2.1 °C, Daytime High 5.6 °C), and explain the agronomic frost injury hazard to emerging crop shoots.
            - For date ranges: Present the day-by-day temperature progression chronologically.
-        3. LANGUAGE: ALWAYS respond in professional, crisp English.
-        4. BREVITY: Keep responses concise, practical, and farmer-focused (2 to 4 sentences).
-        5. CHARTS: If the user explicitly asks for a chart or visualization, append up to two tags at the very 
+        3. INTELLIGENT DISAMBIGUATION & GUIDANCE:
+           - If the user's query is broad, brief, or exploratory (e.g. "Hava durumu?", "Tavsiyen nedir?", "Ne yapmalıyım?", "Toprak durumu?"):
+             Provide an executive summary of the current agro-satellite status AND append a clean, structured section:
+             "💡 Önerilen Takip Soruları:" (or "💡 Recommended Follow-Up Queries:" if in English) with 3 sharp, relevant suggestions:
+             1. 15 Nisan dondurucu soğuk ve fide don riski analizi
+             2. SMAP toprak nemine göre gece sulama tasarruf planı
+             3. MODIS NDVI yeşillenme eğrisi ve ürün rotasyonu tavsiyesi
+        4. MULTI-DATASET CITATIONS:
+           - When discussing soil: Cite NASA SMAP (14.2% volumetric θv, <15% critical water stress threshold).
+           - When discussing plants: Cite NASA MODIS (NDVI 0.28-0.32, EVI 0.19-0.22, delayed green-up).
+           - When discussing freeze: Cite NSIDC Cryospheric Freeze/Thaw state transition (frozen topsoil thawed by April 18-20).
+           - When discussing water demand: Cite OpenET (2.1 mm/day actual ET vs 4.8 mm/day reference ET).
+           - When discussing economics: Cite ~35% nocturnal pumping tariff savings (10 PM - 6 AM) + 20% deficit irrigation yielding ~48% net compounding savings.
+        5. LANGUAGE MIRRORING:
+           - Respond in the SAME language as the user's input:
+             - If the user queries in Turkish, reply in fluent, articulate Turkish.
+             - If the user queries in English, reply in crisp, professional English.
+        6. BREVITY & TONE: Keep answers concise, practical, authoritative, and farmer-focused (2 to 4 sentences plus any bulleted points).
+        7. CHARTS: If the user explicitly asks for a chart or visualization, append up to two tags at the very 
            END of your response in this exact format:
            [CHART: data, type]
            where data is one of: ndvi, weather, frost, soil, savings
@@ -2786,9 +3064,9 @@ elif selected == PAGES[5]:
         if error:
             st.error(f"AI Service Notice: {error}")
             ai_reply = (
-                f"I am currently operating in telemetry fallback mode. Current SMAP soil moisture stands at "
-                f"{snap['soil_pct']:.1f}% with an overnight low of {snap['min_temp']:.1f} °C. "
-                "We recommend maintaining nocturnal deficit irrigation to conserve water and protect emerging crops."
+                f"Operating in agricultural telemetry fallback mode. Current NASA SMAP soil moisture stands at "
+                f"{snap['soil_pct']:.1f}% ({soil_label}) with an overnight low of {snap['min_temp']:.1f} °C. "
+                "We recommend maintaining nocturnal deficit irrigation (10 PM - 6 AM) to conserve water and protect emerging crops."
             )
 
         # Parse tags
