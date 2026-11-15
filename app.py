@@ -2,19 +2,28 @@ import os
 import gdown
 
 # --- OTOMATİK DRIVE İNDİRME YAMASI ---
-DRIVE_FILES = {
-    "SMAP_L3_SM_P_E_20200421_R19240_001.hdf": "https://drive.google.com/file/d/1AUBcjJgitFUdlQPJuFQm-cDq-YMZmKPe/view?usp=drive_link",
-    "SMAP_L3_SM_P_E_20200421_R19240_001.tif": "https://drive.google.com/file/d/1Z3Lx2I84FrZLvu0_W4w4uD6gFrrvgA3G/view?usp=drive_link",
-    "SMAP_L3_SM_P_E_20200421_R19240_001.h5": "https://drive.google.com/file/d/1Z3Lx2I84FrZLvu0_W4w4uD6gFrrvgA3G/view?usp=drive_link"
-}
+import streamlit as st
 
-for filename, file_id in DRIVE_FILES.items():
-    if not os.path.exists(filename):
-        try:
-            url = f"https://drive.google.com/uc?id={file_id}"
-            gdown.download(url, filename, quiet=False, fuzzy=True)
-        except Exception as e:
-            print(f"{filename} indirilemedi: {e}")
+# --- 1. HDF Dosyası (MOD13Q1) ---
+hdf_filename = "MOD13Q1.A2020097.h09v04.061.2020332100419.hdf"
+if not os.path.exists(hdf_filename):
+    hdf_url = "https://drive.google.com/uc?id=1AUBcjJgitFUdlQPJuFQm-cDq-YMZmKPe"
+    with st.spinner("MOD13Q1 HDF verisi Google Drive'dan indiriliyor..."):
+        gdown.download(hdf_url, hdf_filename, quiet=False, fuzzy=True)
+
+# --- 2. H5 Dosyası (SMAP) ---
+h5_filename = "SMAP_L3_SM_P_E_20200421_R19240_001.h5"
+if not os.path.exists(h5_filename):
+    h5_url = "https://drive.google.com/uc?id=1_CsqYlqoHc_Jgee3girMowmzvMZ9nKpi"
+    with st.spinner("SMAP H5 verisi Google Drive'dan indiriliyor..."):
+        gdown.download(h5_url, h5_filename, quiet=False, fuzzy=True)
+
+# --- 3. TIF Dosyası (Uydu Haritası) ---
+tif_filename = "NH_PROBABILISTIC_AM_FT_2020_day112.tif"
+if not os.path.exists(tif_filename):
+    tif_url = "https://drive.google.com/uc?id=1Z3Lx2I84FrZLvu0_W4w4uD6gFrrvgA3G"
+    with st.spinner("Uydu TIF verisi Google Drive'dan indiriliyor..."):
+        gdown.download(tif_url, tif_filename, quiet=False, fuzzy=True)
 # -------------------------------------
 import re
 import time
