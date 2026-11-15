@@ -381,6 +381,82 @@ def get_secret(name: str) -> str | None:
 
 def ask_groq(system_prompt: str, history: list[dict], retries: int = 3) -> tuple[str | None, str | None]:
     """
+    Submits conversation to Groq LLM API with automated model discovery and fallback logic.
+    Returns (reply_text, error_message).
+    """
+    if not GROQ_AVAILABLE:
+        return None, "The Groq client library is not installed in this environment."
+
+    api_key = get_secret("GROQ_API_KEY")
+    if not api_key:
+        return None, "GROQ_API_KEY was not found. Please configure it in .streamlit/secrets.toml."
+
+    try:
+        client = Groq(api_key=api_key)
+
+        # Prioritized production models for Groq (updated for current active lineup)
+        fallback_candidates = [
+            "openai/gpt-oss-20b",
+            "openai/gpt-oss-120b",
+            "llama-3.3-70b-versatile",
+            "qwen/qwen3-32b",
+            "llama-3.1-70b-versatile",
+        ]
+
+        # Dynamically query active models if available to avoid 404 deprecated model errors
+        models_to_try = []
+        try:
+            available_models = client.models.list()
+            active_ids = [m.id for m in available_models.data]
+            text_models = [
+                m_id for m_id in active_ids
+                if not any(ex in m_id.lower() for ex in ["whisper", "safeguard", "guard", "orpheus", "embed"])
+            ]
+            for cand in fallback_candidates:
+                if cand in text_models and cand not in models_to_try:
+                    models_to_try.append(cand)
+            for m_id in text_models:
+                if m_id not in models_to_try:
+                    models_to_try.append(m_id)
+        except Exception:
+            pass
+
+        if not models_to_try:
+            models_to_try = fallback_candidates
+
+        messages = [{"role": "system", "content": system_prompt}] + history[-8:]
+        last_error = ""
+
+        for model in models_to_try:
+            for attempt in range(retries):
+                try:
+                    resp = client.chat.completions.create(
+                        model=model,
+                        messages=messages,
+                        temperature=0.35,
+                        max_tokens=900,
+                    )
+                    text = resp.choices[0].message.content
+                    if text and text.strip():
+                        return text, None
+                    last_error = f"{model} returned an empty payload."
+                    break
+                except Exception as e:
+                    last_error = f"{type(e).__name__}: {e}"
+                    err_lower = str(e).lower()
+                    if "401" in err_lower or "invalid api key" in err_lower:
+                        return None, f"Groq API authentication failed. Please verify API key. ({last_error})"
+                    if "404" in err_lower or "model_not_found" in err_lower:
+                        # Model retired or unavailable, skip to next model immediately
+                        break
+                    if "429" in err_lower or "rate" in err_lower:
+                        time.sleep(1.5 ** attempt)
+                        continue
+                    break
+        return None, last_error
+    except Exception as e:
+        return None, str(e)
+    """
     Submits conversation to Groq LLM API with automated model fallback and retry logic.
     Returns (reply_text, error_message).
     """
