@@ -4,12 +4,18 @@ from __future__ import annotations
 
 from typing import Optional
 from fastapi import FastAPI, Request, Query, status
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pathlib import Path
+
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
 
 from services.errors import BaseFarmediaError, InvalidInputError
 from services.i18n import t
-from services.weather_service import get_coordinates, get_weather_data
+from services.weather_service import get_coordinates, get_forecast, get_weather_data
+from services.geocoding import geocode_location
+from services.crops import parse_crops
+from services.insights import build_insights
 from services.frost_engine import analyze_frost_risk
 from services.sarp_ai import get_sarp_ai_advice
 
@@ -37,7 +43,16 @@ async def farmedia_error_handler(request: Request, exc: BaseFarmediaError):
     )
 
 
-@app.get("/", summary="Ana Sayfa / Sağlık Kontrolü")
+STATIC_DIR = Path(__file__).parent / "static"
+
+
+@app.get("/", include_in_schema=False)
+async def index():
+    """Serve the single-page web UI."""
+    return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/api/health", summary="Ana Sayfa / Sağlık Kontrolü")
 async def root(lang: str = Query("tr", description="Dil seçimi (tr / en)")):
     """API'nin ayakta olduğunu ve çalıştığını gösterir."""
     return {
@@ -118,3 +133,68 @@ async def ask_sarp_ai(request: AskRequest):
         "city": request.city,
         "sarp_ai_answer": ai_answer
     }
+
+
+@app.get("/api/geocode", summary="Profil konumundan koordinat bul (Nominatim)")
+async def geocode(
+    country: str = Query(...),
+    state: str = "",
+    city: str = "",
+    district: str = "",
+    lang: str = "tr",
+):
+    return await geocode_location(country, state, city, district, lang=lang)
+
+
+class CropsRequest(BaseModel):
+    text: str = ""
+    lang: str = "tr"
+
+
+@app.post("/api/parse-crops", summary="Serbest metinden ürünleri ayrıştır")
+async def parse_crops_endpoint(req: CropsRequest):
+    return parse_crops(req.text, req.lang)
+
+
+class DashboardRequest(BaseModel):
+    latitude: float = Field(..., ge=-90, le=90)
+    longitude: float = Field(..., ge=-180, le=180)
+    lang: str = "tr"
+    role: str = "hobby"  # "hobby" | "farm"
+    farm_size: Optional[float] = Field(None, ge=0)
+    crops_last: str = ""
+    crops_current: str = ""
+    crops_next: str = ""
+
+
+@app.post("/api/dashboard", summary="Hava durumu + öneriler")
+async def dashboard(req: DashboardRequest):
+    forecast = await get_forecast(req.latitude, req.longitude)
+    is_farm = req.role == "farm"
+    parsed = {
+        k: parse_crops(getattr(req, f"crops_{k}") if is_farm or k == "current" else "", req.lang)
+        for k in ("last", "current", "next")
+    }
+    insights = build_insights(
+        forecast,
+        lang=req.lang,
+        role="farm" if is_farm else "hobby",
+        farm_size=req.farm_size if is_farm else None,
+        crops_last=parsed["last"]["crops"],
+        crops_current=parsed["current"]["crops"],
+        crops_next=parsed["next"]["crops"],
+    )
+    return {
+        "forecast": {
+            "current": forecast.get("current", {}),
+            "current_units": forecast.get("current_units", {}),
+            "daily": forecast.get("daily", {}),
+            "timezone": forecast.get("timezone"),
+            "elevation": forecast.get("elevation"),
+        },
+        "insights": insights,
+        "crops": parsed,
+    }
+
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

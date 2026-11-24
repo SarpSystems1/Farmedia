@@ -75,3 +75,35 @@ async def get_weather_data(latitude: float, longitude: float) -> dict[str, Any]:
         raise UpstreamFailureError(f"Weather forecast returned status code {response.status_code}")
 
     return response.json()
+
+async def get_forecast(latitude: float, longitude: float) -> dict[str, Any]:
+    """Current conditions, 48h hourly series and a 7-day daily forecast for the dashboard."""
+    if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+        raise InvalidInputError("Coordinates out of range.", field="coordinates")
+
+    params = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "current": (
+            "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,"
+            "weather_code,wind_speed_10m,wind_gusts_10m,surface_pressure,is_day"
+        ),
+        "hourly": "temperature_2m,dew_point_2m,wind_speed_10m,soil_temperature_0cm",
+        "daily": (
+            "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,"
+            "precipitation_probability_max,wind_speed_10m_max,uv_index_max"
+        ),
+        "forecast_days": 7,
+        "timezone": "auto",
+    }
+    async with httpx.AsyncClient(timeout=12.0) as client:
+        try:
+            response = await client.get(WEATHER_URL, params=params)
+        except httpx.TimeoutException as exc:
+            raise UpstreamTimeoutError("Weather forecast service timed out.") from exc
+        except httpx.RequestError as exc:
+            raise UpstreamFailureError(f"Weather forecast request failed: {exc}") from exc
+
+    if response.status_code != 200:
+        raise UpstreamFailureError(f"Weather forecast returned status code {response.status_code}")
+    return response.json()

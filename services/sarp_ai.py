@@ -1,12 +1,20 @@
 import os
-from openai import OpenAI
 from dotenv import load_dotenv
 
 # .env dosyasındaki değişkenleri yüklüyoruz
 load_dotenv()
 
-# OpenAI istemcisini başlatıyoruz
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+_client = None
+
+
+def _get_client():
+    """Create the OpenAI client lazily so the app starts without an API key."""
+    global _client
+    if _client is None:
+        from openai import OpenAI
+
+        _client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    return _client
 
 async def get_sarp_ai_advice(question: str, weather_context: str = "") -> str:
     """
@@ -25,7 +33,7 @@ async def get_sarp_ai_advice(question: str, weather_context: str = "") -> str:
         if weather_context:
             user_content += f"\n\nAnlık Tarım/Hava Verisi Bağlamı:\n{weather_context}"
 
-        response = client.chat.completions.create(
+        response = _get_client().chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_prompt},

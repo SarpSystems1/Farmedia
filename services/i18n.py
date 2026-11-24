@@ -3,6 +3,8 @@
 from __future__ import annotations
 from typing import Any
 
+from services.insight_texts import EN as _INS_EN, TR as _INS_TR
+
 TRANSLATIONS: dict[str, dict[str, str]] = {
     "tr": {
         # Hata Mesajları
@@ -55,6 +57,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "app.welcome": "Farmedia API is active and running.",
     }
 }
+
+TRANSLATIONS["tr"].update(_INS_TR)
+TRANSLATIONS["en"].update(_INS_EN)
+
 
 def t(lang: str, key: str, **kwargs: Any) -> str:
     """Belirtilen dilde ve anahtarda çeviri metnini döndürür.

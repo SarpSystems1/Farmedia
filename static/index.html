@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Farmedia</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- ============ 1. LANGUAGE ============ -->
+<main id="view-lang" class="view center" hidden>
+  <div class="card narrow tc">
+    <div class="logo big">🌱</div>
+    <h1>Farmedia</h1>
+    <p class="muted">Choose your language · Dilinizi seçin</p>
+    <div class="stack">
+      <button class="btn lg" data-pick-lang="en">🇬🇧&nbsp; English</button>
+      <button class="btn lg" data-pick-lang="tr">🇹🇷&nbsp; Türkçe</button>
+    </div>
+  </div>
+</main>
+
+<!-- ============ 2. PROFILE / ONBOARDING ============ -->
+<main id="view-profile" class="view" hidden>
+  <form id="profile-form" class="card form" novalidate autocomplete="off">
+    <header class="form-head">
+      <div class="logo">🌱</div>
+      <div>
+        <h1 data-i18n="profile.title"></h1>
+        <p class="muted" data-i18n="profile.subtitle"></p>
+      </div>
+    </header>
+
+    <section>
+      <h2><span class="step">1</span><span data-i18n="profile.about"></span></h2>
+      <div class="photo-row">
+        <label class="avatar-pick" for="f-photo" title="">
+          <img id="photo-preview" alt="" hidden>
+          <span id="photo-placeholder">📷</span>
+        </label>
+        <div>
+          <input type="file" id="f-photo" accept="image/*" hidden>
+          <label for="f-photo" class="btn sm ghost" data-i18n="profile.photo_upload"></label>
+          <button type="button" id="photo-remove" class="btn sm link" hidden data-i18n="profile.photo_remove"></button>
+          <p class="hint" data-i18n="profile.photo_hint"></p>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label for="f-first" data-i18n="profile.first_name"></label><input id="f-first" required autocomplete="given-name"></div>
+        <div class="field"><label for="f-last" data-i18n="profile.last_name"></label><input id="f-last" required autocomplete="family-name"></div>
+      </div>
+      <div class="field"><label for="f-email" data-i18n="profile.email"></label><input id="f-email" type="email" required placeholder="name@gmail.com" autocomplete="email"></div>
+    </section>
+
+    <section>
+      <h2><span class="step">2</span><span data-i18n="profile.role_title"></span></h2>
+      <div class="role-cards" role="radiogroup">
+        <label class="role-card"><input type="radio" name="role" value="hobby" checked>
+          <span class="role-ico">🪴</span><strong data-i18n="role.hobby"></strong><small data-i18n="role.hobby_desc"></small></label>
+        <label class="role-card"><input type="radio" name="role" value="farm">
+          <span class="role-ico">🚜</span><strong data-i18n="role.farm"></strong><small data-i18n="role.farm_desc"></small></label>
+      </div>
+    </section>
+
+    <section>
+      <h2><span class="step">3</span><span data-i18n="profile.location_title"></span></h2>
+      <div class="grid2">
+        <div class="field"><label for="f-country" data-i18n="profile.country"></label><input id="f-country" required autocomplete="country-name"></div>
+        <div class="field"><label for="f-state"><span data-i18n="profile.state"></span> <em data-i18n="common.optional"></em></label><input id="f-state"></div>
+        <div class="field"><label for="f-city" data-i18n="profile.city"></label><input id="f-city" required></div>
+        <div class="field"><label for="f-district"><span data-i18n="profile.district"></span> <em data-i18n="common.optional"></em></label><input id="f-district"></div>
+      </div>
+      <div class="geo-row">
+        <button type="button" id="geo-btn" class="btn ghost" data-i18n="profile.detect"></button>
+        <div id="geo-status" class="geo-status" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section id="farm-section" hidden>
+      <h2><span class="step">4</span><span data-i18n="profile.farm_title"></span></h2>
+      <div class="field narrow-field"><label for="f-size" data-i18n="profile.farm_size"></label>
+        <div class="input-suffix"><input id="f-size" type="number" min="0" step="any" inputmode="decimal"><span data-i18n="common.decares"></span></div>
+      </div>
+      <div class="field"><label for="f-last-crops" data-i18n="profile.crops_last"></label>
+        <textarea id="f-last-crops" rows="2" data-i18n-ph="profile.crops_ph"></textarea><div class="chips" id="chips-last"></div></div>
+      <div class="field"><label for="f-current-crops" data-i18n="profile.crops_current"></label>
+        <textarea id="f-current-crops" rows="2" data-i18n-ph="profile.crops_ph"></textarea><div class="chips" id="chips-current"></div></div>
+      <div class="field"><label for="f-next-crops" data-i18n="profile.crops_next"></label>
+        <textarea id="f-next-crops" rows="2" data-i18n-ph="profile.crops_ph"></textarea><div class="chips" id="chips-next"></div></div>
+      <p class="hint" data-i18n="profile.crops_hint"></p>
+    </section>
+
+    <div id="form-error" class="alert error" role="alert" hidden></div>
+
+    <footer class="form-foot">
+      <button type="button" id="profile-cancel" class="btn ghost" hidden data-i18n="common.cancel"></button>
+      <button type="submit" class="btn primary lg" data-i18n="profile.save"></button>
+    </footer>
+  </form>
+</main>
+
+<!-- ============ 3. DASHBOARD ============ -->
+<main id="view-dash" class="view" hidden>
+  <header class="topbar">
+    <div class="brand"><span class="logo">🌱</span><strong>Farmedia</strong></div>
+    <div class="topbar-actions">
+      <button id="btn-refresh" class="btn sm ghost" data-i18n="dash.refresh"></button>
+      <button id="btn-lang" class="btn sm ghost" title="Language / Dil"></button>
+      <button id="btn-profile" class="user-chip" data-i18n-title="dash.edit_profile">
+        <img id="user-photo" alt="" hidden><span id="user-initials"></span>
+        <span id="user-name"></span>
+      </button>
+    </div>
+  </header>
+
+  <div class="container">
+    <section class="hero">
+      <div>
+        <p class="muted" id="hello"></p>
+        <h1 id="loc-title"></h1>
+        <p class="muted small" id="loc-sub"></p>
+      </div>
+      <div class="hero-meta" id="hero-meta"></div>
+    </section>
+
+    <div id="dash-error" class="alert error" role="alert" hidden></div>
+    <div id="dash-loading" class="loading" hidden><span class="spinner"></span><span data-i18n="common.loading"></span></div>
+
+    <div id="dash-body" hidden>
+      <section>
+        <h2 class="sec" data-i18n="dash.now"></h2>
+        <div class="tiles" id="tiles"></div>
+      </section>
+
+      <section>
+        <h2 class="sec" data-i18n="dash.forecast"></h2>
+        <div class="table-wrap">
+          <table class="wx">
+            <thead><tr>
+              <th data-i18n="tbl.day"></th><th data-i18n="tbl.sky"></th>
+              <th data-i18n="tbl.min"></th><th data-i18n="tbl.max"></th>
+              <th data-i18n="tbl.rain"></th><th data-i18n="tbl.prob"></th>
+              <th data-i18n="tbl.wind"></th><th data-i18n="tbl.uv"></th>
+            </tr></thead>
+            <tbody id="wx-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="crop-summary" hidden>
+        <h2 class="sec" data-i18n="dash.your_farm"></h2>
+        <div class="card farm-card" id="farm-card"></div>
+      </section>
+
+      <section class="insights">
+        <div class="col">
+          <h2 class="sec good" data-i18n="dash.recommend"></h2>
+          <div id="cards-rec" class="cards"></div>
+        </div>
+        <div class="col">
+          <h2 class="sec bad" data-i18n="dash.avoid"></h2>
+          <div id="cards-avoid" class="cards"></div>
+        </div>
+      </section>
+
+      <p class="footnote" data-i18n="dash.sources"></p>
+    </div>
+  </div>
+</main>
+
+<script src="/static/i18n.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
