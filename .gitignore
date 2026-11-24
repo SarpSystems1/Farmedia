@@ -1,0 +1,22 @@
+# --- Hassas Bilgiler ve Anahtarlar ---
+.env
+secrets.toml
+config.json
+config.yaml
+
+# --- Continue Eklentisi ---
+.continue/
+
+# --- Python Sanal Ortam ve Önbellek Klasörleri ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+env/
+venv/
+ENV/
+
+# --- İşletim Sistemi Artıkları ---
+.DS_Store
+Thumbs.db
