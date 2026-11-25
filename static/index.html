@@ -22,6 +22,68 @@
   </div>
 </main>
 
+<!-- ============ 1b. SIGN IN / SIGN UP (right after the language gate) ============ -->
+<main id="view-auth" class="view center" hidden>
+  <div class="card narrow auth-card">
+    <div class="logo big">🌱</div>
+    <h1>Farmedia</h1>
+    <div class="auth-tabs" role="tablist" data-i18n-aria="auth.tabs">
+      <button type="button" role="tab" data-auth-tab="signin" aria-selected="true" data-i18n="auth.tab_signin"></button>
+      <button type="button" role="tab" data-auth-tab="signup" aria-selected="false" data-i18n="auth.tab_signup"></button>
+    </div>
+
+    <form id="form-signin" class="auth-form" novalidate autocomplete="on">
+      <h2 data-i18n="auth.signin_title"></h2>
+      <p class="hint" data-i18n="auth.signin_sub"></p>
+      <div class="field"><label for="si-email" data-i18n="acc.email"></label><input id="si-email" type="email" autocomplete="username" required></div>
+      <div class="field"><label for="si-password" data-i18n="acc.password"></label><input id="si-password" type="password" autocomplete="current-password" required></div>
+      <button type="submit" class="btn primary lg" data-i18n="acc.signin"></button>
+      <div id="si-status" class="geo-status" aria-live="polite"></div>
+    </form>
+
+    <form id="form-signup" class="auth-form" novalidate autocomplete="on" hidden>
+      <h2 data-i18n="auth.signup_title"></h2>
+      <p class="hint" data-i18n="auth.signup_sub"></p>
+      <div class="grid2">
+        <div class="field"><label for="su-first" data-i18n="auth.first_name"></label><input id="su-first" required autocomplete="given-name"></div>
+        <div class="field"><label for="su-last" data-i18n="auth.last_name"></label><input id="su-last" required autocomplete="family-name"></div>
+      </div>
+      <div class="field"><label for="su-email" data-i18n="acc.email"></label><input id="su-email" type="email" required autocomplete="email"></div>
+      <div class="field"><label for="su-password" data-i18n="acc.password"></label>
+        <input id="su-password" type="password" minlength="6" maxlength="128" required autocomplete="new-password">
+        <small class="hint" data-i18n="auth.password_hint"></small></div>
+      <div class="field"><label for="su-password2" data-i18n="auth.password_again"></label>
+        <input id="su-password2" type="password" minlength="6" maxlength="128" required autocomplete="new-password"></div>
+      <div class="field"><label for="su-country" data-i18n="auth.country"></label>
+        <select id="su-country">
+          <option value="TR">Türkiye (TR)</option>
+          <option value="US">United States (US)</option>
+          <option value="GB">United Kingdom (GB)</option>
+          <option value="DE">Germany (DE)</option>
+          <option value="FR">France (FR)</option>
+          <option value="NL">Netherlands (NL)</option>
+          <option value="ES">Spain (ES)</option>
+          <option value="IT">Italy (IT)</option>
+          <option value="PL">Poland (PL)</option>
+          <option value="CA">Canada (CA)</option>
+          <option value="AU">Australia (AU)</option>
+        </select></div>
+      <fieldset class="consents">
+        <legend data-i18n="auth.consents_title"></legend>
+        <div id="su-consents"></div>
+      </fieldset>
+      <p id="su-docs" class="hint"></p>
+      <button type="submit" id="su-submit" class="btn primary lg" data-i18n="auth.signup_btn"></button>
+      <div id="su-status" class="geo-status" aria-live="polite"></div>
+    </form>
+
+    <div class="auth-foot">
+      <button type="button" id="auth-skip" class="btn ghost" data-i18n="auth.continue_local"></button>
+      <p class="hint" data-i18n="auth.continue_hint"></p>
+    </div>
+  </div>
+</main>
+
 <!-- ============ 2. PROFILE / ONBOARDING ============ -->
 <main id="view-profile" class="view" hidden>
   <form id="profile-form" class="card form" novalidate autocomplete="off">
@@ -108,6 +170,7 @@
     <div class="topbar-actions">
       <button id="btn-refresh" class="btn sm ghost" data-i18n="dash.refresh"></button>
       <button id="btn-lang" class="btn sm ghost" title="Language / Dil"></button>
+      <button id="btn-settings" class="btn sm ghost" data-i18n-title="settings.open" aria-label="Settings">⚙️</button>
       <button id="btn-profile" class="user-chip" data-i18n-title="dash.edit_profile">
         <img id="user-photo" alt="" hidden><span id="user-initials"></span>
         <span id="user-name"></span>
@@ -165,10 +228,207 @@
         </div>
       </section>
 
+      <section>
+        <h2 class="sec" data-i18n="mkt.suppliers"></h2>
+        <div id="market-suppliers"></div>
+      </section>
+
+      <section>
+        <h2 class="sec" data-i18n="mkt.costs"></h2>
+        <div id="market-costs"></div>
+      </section>
+
       <p class="footnote" data-i18n="dash.sources"></p>
     </div>
   </div>
 </main>
+
+<!-- ============ 4. SETTINGS ============ -->
+<main id="view-settings" class="view" hidden>
+  <header class="topbar">
+    <div class="brand"><button id="settings-back" class="btn sm ghost" data-i18n="settings.back"></button>
+      <strong data-i18n="settings.title"></strong></div>
+  </header>
+
+  <div class="container settings">
+    <nav class="tabs" role="tablist" data-i18n-aria="settings.tabs">
+      <button role="tab" class="tab" data-tab="profile" data-i18n="settings.tab_profile"></button>
+      <button role="tab" class="tab" data-tab="ui" data-i18n="settings.tab_ui"></button>
+      <button role="tab" class="tab" data-tab="lang" data-i18n="settings.tab_lang"></button>
+      <button role="tab" class="tab" data-tab="account" data-i18n="settings.tab_account"></button>
+      <button role="tab" class="tab" data-tab="support" data-i18n="settings.tab_support"></button>
+    </nav>
+
+    <section class="panel card" data-panel="profile">
+      <div id="profile-host"></div>
+    </section>
+
+    <section class="panel card" data-panel="ui" hidden>
+      <h2 data-i18n="settings.theme"></h2>
+      <div class="seg" role="radiogroup" data-pref="theme">
+        <button type="button" role="radio" data-value="system" data-i18n="settings.theme_system"></button>
+        <button type="button" role="radio" data-value="light" data-i18n="settings.theme_light"></button>
+        <button type="button" role="radio" data-value="dark" data-i18n="settings.theme_dark"></button>
+      </div>
+      <h2 data-i18n="settings.density"></h2>
+      <div class="seg" role="radiogroup" data-pref="density">
+        <button type="button" role="radio" data-value="comfortable" data-i18n="settings.density_comfortable"></button>
+        <button type="button" role="radio" data-value="compact" data-i18n="settings.density_compact"></button>
+      </div>
+      <h2 data-i18n="settings.forecast_days"></h2>
+      <div class="seg" role="radiogroup" data-pref="forecastDays">
+        <button type="button" role="radio" data-value="3">3</button>
+        <button type="button" role="radio" data-value="5">5</button>
+        <button type="button" role="radio" data-value="7">7</button>
+      </div>
+      <p class="hint" data-i18n="settings.ui_hint"></p>
+    </section>
+
+    <section class="panel card" data-panel="lang" hidden>
+      <h2 data-i18n="settings.language"></h2>
+      <div class="seg" role="radiogroup" data-pref="lang">
+        <button type="button" role="radio" data-value="en">🇬🇧 English</button>
+        <button type="button" role="radio" data-value="tr">🇹🇷 Türkçe</button>
+      </div>
+      <p class="hint" data-i18n="settings.lang_hint"></p>
+    </section>
+
+    <section class="panel card" data-panel="account" hidden>
+      <!-- Signed out: sign-in and sign-up live in the auth view. -->
+      <div id="acc-guest" class="acc-block">
+        <p class="hint" data-i18n="auth.account_hint"></p>
+        <div><button type="button" id="acc-open-auth" class="btn primary" data-i18n="auth.open"></button></div>
+        <div id="acc-login-status" class="geo-status" aria-live="polite"></div>
+      </div>
+
+      <!-- Signed-in: consents, data export and account deletion. -->
+      <div id="acc-user" hidden>
+        <div class="acc-head">
+          <p id="acc-who" class="muted"></p>
+          <p id="sync-status" class="hint" aria-live="polite"></p>
+          <button type="button" id="acc-logout" class="btn sm ghost" data-i18n="acc.signout"></button>
+        </div>
+
+        <form id="consent-form" class="acc-block" novalidate>
+          <h2 data-i18n="acc.consents_title"></h2>
+          <p class="hint" data-i18n="acc.consents_hint"></p>
+          <label class="check"><input type="checkbox" id="consent-alert-email"><span data-i18n="acc.alert_email"></span></label>
+          <label class="check"><input type="checkbox" id="consent-alert-sms"><span data-i18n="acc.alert_sms"></span></label>
+          <label class="check"><input type="checkbox" id="consent-marketing-email"><span data-i18n="acc.marketing_email"></span></label>
+          <label class="check"><input type="checkbox" id="consent-do-not-sell"><span data-i18n="acc.do_not_sell"></span></label>
+          <button type="submit" class="btn primary" data-i18n="common.save"></button>
+          <div id="consent-status" class="geo-status" aria-live="polite"></div>
+        </form>
+
+        <div class="acc-block">
+          <h2 data-i18n="acc.rights_title"></h2>
+          <p class="hint" data-i18n="acc.export_hint"></p>
+          <div><button type="button" id="btn-export" class="btn ghost" data-i18n="acc.export"></button></div>
+          <div id="rights-status" class="geo-status" aria-live="polite"></div>
+        </div>
+
+        <form id="delete-form" class="acc-block danger-zone" novalidate>
+          <h2 data-i18n="acc.delete_title"></h2>
+          <p class="hint" data-i18n="acc.delete_hint"></p>
+          <div class="field"><label for="delete-password" data-i18n="acc.delete_password"></label><input id="delete-password" type="password" autocomplete="current-password"></div>
+          <div><button type="submit" class="btn danger" data-i18n="acc.delete_button"></button></div>
+          <div id="delete-status" class="geo-status" aria-live="polite"></div>
+        </form>
+      </div>
+
+      <div class="acc-block">
+        <h2 data-i18n="legal.settings_title"></h2>
+        <div class="link-row">
+          <button type="button" class="btn sm ghost" data-legal="kvkk" data-i18n="legal.kvkk_link"></button>
+          <button type="button" class="btn sm ghost" data-legal="privacy" data-i18n="legal.privacy_link"></button>
+          <button type="button" class="btn sm ghost" data-legal="cookies" data-i18n="legal.cookies_link"></button>
+        </div>
+        <div><button type="button" id="cb-reopen" class="btn ghost sm" data-i18n="legal.reopen"></button></div>
+      </div>
+    </section>
+
+    <section class="panel card tc" data-panel="support" hidden>
+      <div class="logo big">🛟</div>
+      <h2 data-i18n="settings.support_title"></h2>
+      <p class="muted" data-i18n="settings.support_text"></p>
+      <span class="pill" data-i18n="settings.coming_soon"></span>
+    </section>
+  </div>
+</main>
+
+<!-- ============ 0. PRIVACY: footer, legal modal, first-visit consent banner ============ -->
+<footer class="site-footer">
+  <nav aria-label="Legal">
+    <button type="button" class="linkbtn" data-legal="kvkk" data-i18n="legal.kvkk_link"></button>
+    <button type="button" class="linkbtn" data-legal="privacy" data-i18n="legal.privacy_link"></button>
+    <button type="button" class="linkbtn" data-legal="cookies" data-i18n="legal.cookies_link"></button>
+  </nav>
+</footer>
+
+<dialog id="legal-modal" class="legal-modal" aria-labelledby="legal-title">
+  <div class="legal-inner">
+    <header class="legal-head">
+      <h2 id="legal-title"></h2>
+      <button type="button" id="legal-close" class="btn sm ghost" data-i18n="legal.close"></button>
+    </header>
+    <div id="legal-body" class="legal-body"></div>
+  </div>
+</dialog>
+
+<div id="cb-banner" class="consent-banner" role="region" aria-labelledby="cb-title" hidden>
+  <div>
+    <strong id="cb-title" data-i18n="legal.banner_title"></strong>
+    <p data-i18n="legal.banner_text"></p>
+    <nav class="cb-links" aria-label="Legal">
+      <button type="button" class="linkbtn" data-legal="kvkk" data-i18n="legal.kvkk_link"></button>
+      <button type="button" class="linkbtn" data-legal="privacy" data-i18n="legal.privacy_link"></button>
+      <button type="button" class="linkbtn" data-legal="cookies" data-i18n="legal.cookies_link"></button>
+    </nav>
+    <label class="check"><input type="checkbox" id="cb-ai-share"><span data-i18n="legal.ai_share"></span></label>
+  </div>
+  <div class="cb-actions">
+    <button type="button" id="cb-essential" class="btn ghost sm" data-i18n="legal.essential_only"></button>
+    <button type="button" id="cb-save" class="btn primary sm" data-i18n="legal.save_choice"></button>
+  </div>
+</div>
+
+<!-- ============ 5. SARP AI ADVISOR (floating chat, dashboard only) ============ -->
+<button id="sarp-open" class="sarp-fab" type="button" aria-controls="sarp-panel" aria-expanded="false" hidden>
+  <span aria-hidden="true">🤖</span> <span data-i18n="sarp.open"></span>
+</button>
+
+<section id="sarp-panel" class="sarp-panel card" role="dialog" aria-labelledby="sarp-title" hidden>
+  <header class="sarp-head">
+    <strong id="sarp-title" data-i18n="sarp.title"></strong>
+    <div class="sarp-head-actions">
+      <button type="button" id="sarp-expand" class="btn sm ghost" aria-expanded="false" data-i18n-aria="sarp.expand" data-i18n-title="sarp.expand">⤢</button>
+      <button type="button" id="sarp-close" class="btn sm ghost" data-i18n-aria="sarp.close" data-i18n-title="sarp.close">✕</button>
+    </div>
+  </header>
+
+  <div class="field sarp-city">
+    <label for="sarp-city" data-i18n="sarp.city"></label>
+    <input id="sarp-city" type="text" maxlength="100" autocomplete="off">
+  </div>
+
+  <div id="sarp-log" class="sarp-log" aria-live="polite">
+    <p class="hint" data-i18n="sarp.intro"></p>
+  </div>
+
+  <div class="sarp-chips" role="group" data-i18n-aria="sarp.chips_label">
+    <button type="button" class="sarp-chip" data-sarp-chip="water" data-i18n="sarp.chip_water"></button>
+    <button type="button" class="sarp-chip" data-sarp-chip="frost" data-i18n="sarp.chip_frost"></button>
+    <button type="button" class="sarp-chip" data-sarp-chip="fert" data-i18n="sarp.chip_fert"></button>
+    <button type="button" class="sarp-chip" data-sarp-chip="cost" data-i18n="sarp.chip_cost"></button>
+    <button type="button" class="sarp-chip" data-sarp-chip="weather" data-i18n="sarp.chip_weather"></button>
+  </div>
+  <p id="sarp-share" class="hint"></p>
+  <form id="sarp-form" class="sarp-form" novalidate>
+    <label class="sr-only" for="sarp-input" data-i18n="sarp.question"></label>
+    <textarea id="sarp-input" rows="2" maxlength="2000" data-i18n-ph="sarp.placeholder"></textarea>
+    <button type="submit" id="sarp-send" class="btn primary" data-i18n="sarp.send"></button>
+  </form>
+</section>
 
 <script src="/static/i18n.js"></script>
 <script src="/static/app.js"></script>

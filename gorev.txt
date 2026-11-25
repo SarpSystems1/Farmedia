@@ -1,14 +1,4 @@
-Please implement the following updates and features for the Farmedia app:
-
-1. **UI/UX Overhaul & Clarity:** Redesign and clean up the overall interface so that every section, button, and function is intuitive, well-structured, and visually clear.
-2. **Initial Language Selection:** Add a language selection screen/selector at startup supporting English (EN) and Turkish (TR), applying i18n localization across the entire app.
-3. **User Profile & Onboarding Setup:** Create a user profile creation flow with the following fields:
-   - First Name, Last Name, Gmail, and Profile Photo upload.
-   - User Role / Purpose: "Hobby Gardener" or "Farm Owner".
-   - Location: Country, State/Province (if applicable), City, and District — automatically fetch/detect geographic coordinates based on the entered location.
-   - Conditional Fields (if "Farm Owner" is selected):
-     - Farm size (in decares / dönüm).
-     - Free-text input fields (with smart parsing/detection) for: Last year's crops, Current year's planted crops, and Next year's planned crops.
-4. **Location-Based Weather Dashboard & Smart Insights:**
-   - Using the user's detected coordinates, display a clean real-time weather table/dashboard showing critical agricultural metrics (temperature, humidity, wind speed, precipitation, etc.).
-   - Below the weather table, generate dynamic info cards containing tailored "Recommendations" and "Things to Avoid" calculated from both the real-time weather data and the user's crop/farm profile.
+1. Sarp AI Modern UI & Interactive Charts: Redesign the Sarp AI chat interface in static/index.html, static/style.css, and static/app.js into a clean, modern, expandable drawer/panel with quick action chips. Parse text responses containing 'Chart:' or structured data blocks and automatically render them as interactive, responsive charts using Chart.js inside canvas elements.
+2. Regional Map & Location Search Optimization (maps-local): Fix supplier/map search in services/suppliers.py and static/app.js so that searches do not default to Turkey or unrelated coordinates when opened. Center searches dynamically around the user's selected country, state, city, and district coordinates, scoping the radius properly.
+3. Local Currency & Cost Calculation Localization: Update cost insights, savings tips, and financial displays across the application to dynamically reflect the selected country's currency symbol (₺, $, €, etc.) and localized number formatting, ensuring accurate, region-aware agricultural cost benchmarks.
+4. Production & Deployment Readiness: Ensure all environment variables, static file routes, and configuration files (Procfile/Dockerfile/requirements.txt) are fully optimized for production deployment, allowing a smooth hand-off to the target hosting environment or domain.

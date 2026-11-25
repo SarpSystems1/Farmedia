@@ -15,6 +15,17 @@ from services.errors import (
 GEOCODE_URL = "https://geocoding-api.open-meteo.com/v1/search"
 WEATHER_URL = "https://api.open-meteo.com/v1/forecast"
 
+# One forecast model for every request, so the numbers do not change with the server's default.
+# ECMWF IFS 0.25 deg (global, live-checked against Open-Meteo).
+FORECAST_MODEL = "ecmwf_ifs025"
+# Open-Meteo snaps to its model grid (about 0.25 deg), so more decimals add nothing. 4 decimals
+# (about 11 m) keeps the request exact and gives stable values for caching.
+COORD_DECIMALS = 4
+
+
+def _grid_point(latitude: float, longitude: float) -> tuple[float, float]:
+    return round(float(latitude), COORD_DECIMALS), round(float(longitude), COORD_DECIMALS)
+
 
 async def get_coordinates(city: str) -> dict[str, Any]:
     """Şehir adını alarak enlem, boylam, ülke ve şehir bilgilerini döndürür."""
@@ -56,10 +67,12 @@ async def get_weather_data(latitude: float, longitude: float) -> dict[str, Any]:
         
     # Şafak öncesi ve don analitiği için gerekli saatlik parametreler:
     # temperature_2m, relative_humidity_2m, dew_point_2m, wind_speed_10m
+    lat, lon = _grid_point(latitude, longitude)
     params = {
-        "latitude": latitude,
-        "longitude": longitude,
+        "latitude": lat,
+        "longitude": lon,
         "hourly": "temperature_2m,relative_humidity_2m,dew_point_2m,wind_speed_10m",
+        "models": FORECAST_MODEL,
         "timezone": "auto",
     }
 
@@ -81,12 +94,15 @@ async def get_forecast(latitude: float, longitude: float) -> dict[str, Any]:
     if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
         raise InvalidInputError("Coordinates out of range.", field="coordinates")
 
+    lat, lon = _grid_point(latitude, longitude)
     params = {
-        "latitude": latitude,
-        "longitude": longitude,
+        "latitude": lat,
+        "longitude": lon,
+        # pressure_msl is sea-level pressure. surface_pressure is the raw station value, which
+        # reads about 810 hPa at 1,900 m (Erzurum) and made the dashboard look wrong.
         "current": (
             "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,"
-            "weather_code,wind_speed_10m,wind_gusts_10m,surface_pressure,is_day"
+            "weather_code,wind_speed_10m,wind_gusts_10m,pressure_msl,is_day"
         ),
         "hourly": "temperature_2m,dew_point_2m,wind_speed_10m,soil_temperature_0cm",
         "daily": (
@@ -94,6 +110,7 @@ async def get_forecast(latitude: float, longitude: float) -> dict[str, Any]:
             "precipitation_probability_max,wind_speed_10m_max,uv_index_max"
         ),
         "forecast_days": 7,
+        "models": FORECAST_MODEL,
         "timezone": "auto",
     }
     async with httpx.AsyncClient(timeout=12.0) as client:

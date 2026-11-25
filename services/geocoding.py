@@ -61,6 +61,8 @@ async def _query(q: str, lang: str) -> dict[str, Any] | None:
         "latitude": round(float(hit["lat"]), 5),
         "longitude": round(float(hit["lon"]), 5),
         "display_name": hit.get("display_name", q),
+        # ISO 3166-1 alpha-2 from Nominatim's address details; drives currency and map searches.
+        "country_code": ((hit.get("address") or {}).get("country_code") or "").upper() or None,
     }
     _cache[key] = result
     return result
@@ -76,6 +78,7 @@ async def geocode_location(
 
     # Most specific first; progressively drop the finest level until something matches.
     levels = [district, city, state, country]
+    names = ["district", "city", "state", "country"]
     tried: set[str] = set()
     for start in range(len(levels)):
         parts = [p for p in levels[start:] if p]
@@ -87,6 +90,9 @@ async def geocode_location(
         tried.add(q)
         hit = await _query(q, lang)
         if hit:
-            hit["precision"] = ["district", "city", "state", "country"][start]
+            # The precision is the finest level that was really searched. An empty district must
+            # not be reported as "district" precision: the search started at the city.
+            finest = next(i for i in range(start, len(levels)) if levels[i])
+            hit["precision"] = names[finest]
             return hit
     raise LocationNotFoundError(query=", ".join(p for p in levels if p))

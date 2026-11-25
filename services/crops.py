@@ -70,9 +70,23 @@ _RAW: list[tuple[str, str, str, str, float, float, str, tuple[str, ...]]] = [
     ("orange", "Portakal", "Orange", "citrus", -2, 38, "high", ("oranges", "narenciye", "citrus")),
     ("lemon", "Limon", "Lemon", "citrus", -2, 38, "high", ("lemons",)),
     ("mandarin", "Mandalina", "Mandarin", "citrus", -2, 38, "high", ("mandarins", "tangerine")),
+    ("pomelo", "Altıntopak", "Pomelo", "citrus", -2, 38, "medium",
+     ("pummelo", "altintopak", "altın topak", "altin topak")),
     ("tea", "Çay", "Tea", "tea", -2, 35, "high", ()),
     ("mint", "Nane", "Mint", "mint", 0, 32, "medium", ()),
     ("basil", "Fesleğen", "Basil", "mint", 2, 32, "medium", ("feslegen",)),
+    # Tropical / exotic crops
+    ("dragonfruit", "Ejder Meyvesi", "Dragon Fruit", "cactus", 2, 40, "low",
+     ("pitaya", "pitahaya", "ejdermeyvesi", "dragon fruit", "dragonfruit", "pitaya meyvesi")),
+    ("passionfruit", "Çarkıfelek", "Passion Fruit", "passionflower", 3, 34, "medium",
+     ("carkifelek", "markisa", "maracuja", "maracuya", "passiflora", "pasiflora",
+      "passion fruit", "passionfruit", "passion flower")),
+    ("mango", "Mango", "Mango", "sumac", 5, 40, "medium", ("mangos", "mangoes")),
+    ("avocado", "Avokado", "Avocado", "laurel", 0, 36, "high", ("avocados", "avokado")),
+    ("banana", "Muz", "Banana", "banana", 5, 38, "high", ("bananas", "muzlar")),
+    ("guava", "Guava", "Guava", "myrtle", 2, 38, "medium", ("guavas", "guava meyvesi")),
+    ("pineapple", "Ananas", "Pineapple", "bromeliad", 2, 36, "low",
+     ("pineapples", "ananas meyvesi")),
 ]
 
 CROPS: dict[str, Crop] = {

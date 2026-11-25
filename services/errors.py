@@ -130,8 +130,93 @@ class InvalidInputError(BaseFarmediaError):
         self.field = field
 
 
+class AuthenticationError(BaseFarmediaError):
+    """Giriş bilgileri yanlış ya da oturum belirteci geçersiz/eksik."""
+
+    status_code = HTTPStatus.UNAUTHORIZED  # 401
+    error_code = "auth_failed"
+    message_key = "error.auth_failed"
+    default_detail = "Invalid email or password."
+
+
+class EmailNotConfirmedError(BaseFarmediaError):
+    """Correct password, but the sign-up email has not been confirmed yet."""
+
+    status_code = HTTPStatus.FORBIDDEN  # 403
+    error_code = "email_not_confirmed"
+    message_key = "error.email_not_confirmed"
+    default_detail = "Confirm your email address before signing in."
+
+
+class ConflictError(BaseFarmediaError):
+    """Kayıt zaten var (aynı e-posta)."""
+
+    status_code = HTTPStatus.CONFLICT  # 409
+    error_code = "conflict"
+    message_key = "error.conflict"
+    default_detail = "A resource with these details already exists."
+
+
+class ConsentRequiredError(BaseFarmediaError):
+    """KVKK aydınlatma metni onayı verilmeden kayıt yapılamaz."""
+
+    status_code = HTTPStatus.UNPROCESSABLE_ENTITY  # 422
+    error_code = "consent_required"
+    message_key = "error.consent_required"
+    default_detail = "KVKK consent is required to create an account."
+
+
+class NotConfiguredError(BaseFarmediaError):
+    """Sunucuda gerekli yapılandırma (Supabase URL/anahtar) eksik."""
+
+    status_code = HTTPStatus.SERVICE_UNAVAILABLE  # 503
+    error_code = "not_configured"
+    message_key = "error.not_configured"
+    default_detail = "The service is not configured."
+
+
+class RuleViolationError(BaseFarmediaError):
+    """A database rule (trigger or SQL function) rejected the request.
+
+    The database's own message is kept in ``detail`` so it reaches the client, and the
+    translated ``message`` is chosen from a known-message table when one matches.
+    """
+
+    status_code = HTTPStatus.UNPROCESSABLE_ENTITY  # 422
+    error_code = "rule_violation"
+    message_key = "error.rule_violation"
+    default_detail = "The request does not meet the required rules."
+
+
+# Known database messages -> translation key. Matched by substring, first match wins.
+_DB_MESSAGE_KEYS: tuple[tuple[str, str], ...] = (
+    ("KVKK explicit consent", "error.consent_required"),
+    ("cross-border transfer consent", "error.consent_required"),
+    ("must be accepted", "error.terms_required"),
+    ("current published versions", "error.outdated_documents"),
+    ("valid country code", "error.invalid_country"),
+    ("Protected profile field", "error.protected_field"),
+)
+
+
+def rule_violation_from_db(message: str) -> RuleViolationError:
+    """Build a RuleViolationError from a message raised by db/schema.sql."""
+    error = RuleViolationError(message or None)
+    for fragment, key in _DB_MESSAGE_KEYS:
+        if fragment in (message or ""):
+            error.message_key = key
+            break
+    return error
+
+
 __all__ = [
     "BaseFarmediaError",
+    "RuleViolationError",
+    "rule_violation_from_db",
+    "AuthenticationError",
+    "ConflictError",
+    "ConsentRequiredError",
+    "NotConfiguredError",
     "UpstreamTimeoutError",
     "UpstreamFailureError",
     "LocationNotFoundError",
