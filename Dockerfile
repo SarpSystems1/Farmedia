@@ -1,33 +1,29 @@
-# Production image for the Farmedia API and web UI.
+# Production image: Nginx + PHP-FPM serving the Farmedia PHP app (document root php/public).
 # Build:  docker build -t farmedia .
-# Run:    docker run --env-file .env -p 8000:8000 farmedia
-FROM python:3.13-slim
+# Run:    docker run --env-file .env -p 8080:8080 farmedia
+# The image does not contain .env (see .dockerignore): pass the settings with --env-file.
+FROM php:8.3-fpm-alpine
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    APP_ENV=production \
-    PORT=8000 \
-    FORWARDED_ALLOW_IPS=127.0.0.1
+# Nginx for HTTP. pdo_mysql for the database. curl (health check) and openssl (Claude, Open-Meteo,
+# Overpass, Nominatim over HTTPS) are part of the base image or added here.
+RUN apk add --no-cache nginx curl \
+    && docker-php-ext-install pdo_mysql
 
-WORKDIR /app
+COPY docker/php.ini /usr/local/etc/php/conf.d/farmedia.ini
 
-# Unprivileged user: the app never needs root.
-RUN useradd --create-home --uid 10001 appuser
+WORKDIR /var/www/farmedia
+COPY php ./php
+COPY docker ./docker
+RUN chmod +x docker/start.sh \
+    && chown -R www-data:www-data php
 
-COPY requirements.txt ./
-RUN pip install -r requirements.txt
+ENV APP_ENV=production \
+    PORT=8080
 
-COPY app.py ./
-COPY services ./services
-COPY static ./static
-
-USER appuser
-EXPOSE 8000
+EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.environ.get('PORT', '8000') + '/api/health', timeout=4)"
+    CMD curl -fsS "http://127.0.0.1:${PORT}/api/health.php" || exit 1
 
-# Shell form so ${PORT} is expanded; exec keeps uvicorn as PID 1 so it stops cleanly on SIGTERM.
-CMD ["sh", "-c", "exec uvicorn app:app --host 0.0.0.0 --port ${PORT} --proxy-headers"]
+# Nginx starts as root on its port; PHP-FPM workers run as www-data.
+CMD ["sh", "docker/start.sh"]

@@ -1,13 +1,9 @@
-# Keep secrets, history, caches and local scratch files out of the image.
+# Keep secrets, history, editor files and local scratch out of the image.
 .git
 .gitignore
 .env
 .env.*
 !.env.example
-**/__pycache__
-**/*.pyc
-tests/
-.shots/
 .continue/
 .devcontainer/
 .vscode/
@@ -15,3 +11,4 @@ tests/
 gorev.txt
 Dockerfile
 .dockerignore
+Procfile
